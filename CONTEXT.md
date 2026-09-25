@@ -28,4 +28,6 @@ choices under the request to start coding; they are not extra assignment mandate
 
 See docs/test-evidence.md for verified behavior and remaining delivery limits.
 The root generated starter is preserved in feature-branch history; build from
-each service directory. No remote/PR is configured or published yet.
+each service directory. Origin is Harsha-T-G/Spring-Microservices; implementation is in PR #1.
+Swagger UI supports manual API exploration in both services. The diagrams are
+exactly the three required by the exercise.

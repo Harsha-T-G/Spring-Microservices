@@ -2,8 +2,8 @@
 
 Status: implementation and automated verification completed on the feature
 branch. Selected API defaults are recorded in the API baseline and ADR 0002.
-See test-evidence.md for results; PR publication, container runtime verification
-and a live demonstration remain outside the completed checks.
+See test-evidence.md for results; container runtime verification and a live demonstration remain outside
+the completed checks. PR #1 is published.
 
 [Capability map](../CAPABILITY-MAP.md), [API contract](api-specification.md),
 [boundaries](service-boundaries.md), [structure](project-structure.md),
@@ -75,4 +75,15 @@ and a live demonstration remain outside the completed checks.
 Detailed HTTP shapes and selected normalization/rejection/replay/locking choices
 remain in the API contract rather than being duplicated here. Implemented
 criteria and actual verification map to tests in [evidence](test-evidence.md).
-DEL-005 remains partial until a real PR is published and a live demo is delivered.
+DEL-005 remains partial until a live demo is delivered; PR #1 is published.
+
+## API exploration update
+
+User-requested extension: Swagger UI in both services and the three diagrams specified
+in the exercise: service diagram, successful-order sequence, and Inventory-unavailable sequence.
+
+| ID | Acceptance criterion |
+| --- | --- |
+| API-001 | Both services serve Swagger UI and OpenAPI JSON with service title/version and only their business API paths. |
+| API-002 | POST operations expose required Idempotency-Key, optional X-Correlation-Id, valid example bodies, success and safe error schemas/statuses. |
+| DOC-001 | Exactly the three required editable Mermaid diagrams remain; all render and documentation links/previews agree. |

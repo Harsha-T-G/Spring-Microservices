@@ -1,7 +1,7 @@
 # Service boundaries
 
-Status: planning specification. Requirements below come from the exercise;
-implementation choices are identified in the API specification.
+Status: implemented boundaries. Requirements below come from the exercise;
+selected implementation choices are identified in the API specification.
 
 ## Ownership
 
@@ -99,7 +99,7 @@ sequenceDiagram
     O->>O: Store CONFIRMED order
     O-->>C: 201 order + Location + correlation ID
     C->>O: Repeat same order and key
-    O-->>C: Original completed order; no Inventory call
+    O-->>C: Original completed order, no Inventory call
 ```
 
 ## Inventory-unavailable sequence
@@ -124,7 +124,7 @@ sequenceDiagram
     Note over B: Repeated failed operations reach threshold: OPEN
     C->>O: Later order request
     O->>B: Request permission
-    B-->>O: Denied; no HTTP attempt
+    B-->>O: Denied, no HTTP attempt
     O-->>C: 503 immediately
     Note over B: After wait, next request can enter HALF_OPEN
     C->>O: Retry after recovery

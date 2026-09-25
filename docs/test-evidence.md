@@ -173,9 +173,39 @@ also verifies fast rejection and no additional retry log.
 
 - Compose `config --quiet` passes. Container images/startup have NOT RUN;
   end-to-end runtime evidence uses native JDK 21 processes.
-- Mermaid sources and embedded previews match; no Mermaid renderer was executed.
+- Original diagram validation checked source/preview parity only; the Swagger follow-up below adds actual rendering.
 - No coverage percentage, load-test claim or production latency SLA is asserted.
-- No remote is configured, so PR publication is pending. A ten-minute demo is
-  documented, but no live presentation is claimed.
+- PR #1 is published. A ten-minute demo is documented, but no live presentation is claimed.
 - State/idempotency history remains in memory and is lost on restart; replicas,
   persistence, retention and reconciliation are outside this exercise.
+
+## Swagger UI and diagram correction follow-up
+
+Based on commit `6b3618d`, with edits tested in an isolated working copy and
+transferred without changes to the implementation branch. Native JDK 21.0.12.1
+and the same Maven wrappers were used. Springdoc WebMVC UI 2.9.1 is explicitly
+requested for manual API exploration, following its [Boot 3 documentation](https://springdoc.org/v2/).
+
+| Criterion | RED | GREEN / verification |
+| --- | --- | --- |
+| API-001 | OpenApiTest in each service: GET /v3/api-docs returned 404 | Adding the UI starter and service metadata produced 200 with the service identity and business paths. |
+| API-002 | OpenApiTest in each service: optional correlation parameter missing | Required idempotency key, optional correlation ID, valid request example and success/error schemas pass. Swagger HTML, redirect and local Swagger config also pass. |
+| DOC-001 | Mermaid CLI reproduced parse errors in order-success and inventory-unavailable at message semicolons | Replaced semicolons with commas. All three required diagrams render successfully and were visually inspected. Removed the extra SDD/TDD diagram. |
+
+Focused RED and GREEN commands: `./mvnw -q -Dtest=OpenApiTest test`, from each
+service directory. Both final independent `./mvnw -q clean verify` runs PASS:
+Inventory **42 tests**, Order **63 tests**, zero failures/errors/skips. These
+include all existing API/resilience tests plus three OpenAPI tests per service.
+
+Exactly the original exercise's diagrams remain: services.mmd, order-success.mmd
+and inventory-unavailable.mmd. Mermaid CLI 12.0.0 rendered each to a local PNG
+using installed headless Chrome. Source files match the three Markdown previews;
+local links and source conventions were checked. Renderer dependencies, images
+and raw logs stay in ignored local validation storage, outside the application.
+
+Implementation snapshot SHA-256: `bab82d473e859e717d08df1a9f9238bfa40ee03746d158c9e6514feb87093d26` (same manifest method as above).
+Latest raw logs and renders are retained locally under `.local/swagger-evidence-*`.
+The earlier real two-process E2E evidence remains historical; it was not rerun
+for this Swagger/documentation update. Swagger's server endpoints/assets and
+specification are covered by MockMvc; interactive browser clicks, container
+startup and the live demo remain in the deferred testing phase.

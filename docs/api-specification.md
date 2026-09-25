@@ -286,3 +286,11 @@ Java 21, Resilience4j 2.3.0, and test-only WireMock standalone 3.13.2 are pinned
 Use the JDK HTTP transport explicitly with HTTP/1.1: the initial JDK HTTP/2 upgrade
 to the WireMock server failed with EOF; HTTP/1.1 passed the real client contract
 test. No extra HTTP-client or logging dependency is needed.
+
+## Interactive API documentation
+
+Both services expose `/swagger-ui.html` and `/v3/api-docs` for their own
+`/api/v1/**` operations. The documentation includes request examples, required
+idempotency headers, optional correlation headers, and explicit outcome schemas.
+Swagger sends normal HTTP requests and mutates the same in-memory data as curl.
+Use a new key for a new operation and retain the key/body for a replay.

@@ -1,7 +1,8 @@
 # Review and publication
 
 Implementation branch: `feat/independent-services`. Initial `main` remains the
-foundation. No remote is configured, so there is no published PR or PR URL.
+foundation. [PR #1](https://github.com/Harsha-T-G/Spring-Microservices/pull/1) is open
+against main. Swagger and diagram corrections update the same implementation branch.
 The following is durable delivery documentation, not a generated review report.
 Use it with the repository's [PR template](../.github/pull_request_template.md)
 when an intended remote is available. Do not upload ignored logs or local backups.

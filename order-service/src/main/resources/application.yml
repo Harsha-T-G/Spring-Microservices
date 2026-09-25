@@ -35,3 +35,12 @@ inventory:
 
 orders:
   in-progress-wait-ms: 4000
+
+springdoc:
+  paths-to-match: /api/v1/**
+  override-with-generic-response: false
+  swagger-ui:
+    path: /swagger-ui.html
+    disable-swagger-default-url: true
+    operations-sorter: method
+    tags-sorter: alpha

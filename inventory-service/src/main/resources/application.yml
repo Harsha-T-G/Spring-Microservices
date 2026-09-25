@@ -23,3 +23,12 @@ info:
 logging:
   pattern:
     level: '%5p [${spring.application.name},%X{correlationId}]'
+
+springdoc:
+  paths-to-match: /api/v1/**
+  override-with-generic-response: false
+  swagger-ui:
+    path: /swagger-ui.html
+    disable-swagger-default-url: true
+    operations-sorter: method
+    tags-sorter: alpha

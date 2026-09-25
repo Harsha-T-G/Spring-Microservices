@@ -1,8 +1,7 @@
 # Implementation slices
 
 Application slices are implemented on feat/independent-services. Results are
-recorded in [test evidence](../test-evidence.md); publication and live presentation
-remain separate delivery work.
+recorded in [test evidence](../test-evidence.md); the published PR and remaining live demonstration are tracked separately.
 
 | Task | Criteria | Slice and main files/responsibilities | Verification / status |
 | --- | --- | --- | --- |
@@ -17,7 +16,7 @@ remain separate delivery work.
 | 08 Timeout/retry | RES-001/002/005 | HTTP config, typed client errors, retry | Real transport delay/refusal/500 and nonretryable 4xx; PASS; see evidence |
 | 09 Breaker/recovery | RES-003/004/006 | Explicit breaker/retry composition | Open zero-call behavior, timed trial/recovery; PASS; see evidence |
 | 10 Observability finish | OBS-004 | Logs and Actuator info/health | Required fields/metadata, exposure, no false connectivity claim; PASS; see evidence |
-| 11 Delivery | DEL-001/002/003/004/005 | Compose, actual evidence, README commands, demo and PR | Both suites and real-service scenarios PASS; Compose config PASS; container runtime/live demo/PR publication NOT RUN |
+| 11 Delivery | DEL-001/002/003/004/005 | Compose, actual evidence, README commands, demo and PR | Both suites and real-service scenarios PASS; Compose config PASS; PR #1 published; container runtime/live demo NOT RUN |
 
 Each row contains several behaviors; apply one RED/GREEN cycle at a time, not
 one giant test/implementation batch. Resolve only decisions affecting the active
@@ -33,3 +32,12 @@ Suggested PR sequence: foundation, independent-services, inventory-reservations,
 order-restclient, resilience, observability-and-demo. Use feat/reason for the
 application branches. A PR may include several completed behavior slices when
 they form one coherent review; do not create a PR merely to meet a count.
+
+## Swagger and diagram follow-up
+
+API-001/002: springdoc WebMVC UI in both services, generated API schemas,
+request examples, headers and documented response codes.
+DOC-001: keep the three diagrams named by the original exercise; remove only
+the additional development-workflow diagram. Two sequence parser failures
+were reproduced and fixed by replacing semicolons inside message text.
+See the latest verification entry in test-evidence.md for executed checks.

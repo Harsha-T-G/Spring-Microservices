@@ -100,6 +100,34 @@ of 1–64 letters/digits/`._-`, otherwise generates a UUID. Errors and response
 headers use the current request's ID. Full payloads and examples are in the
 [API specification](docs/api-specification.md).
 
+## Try the APIs with Swagger UI
+
+Start both services using the commands above, with Inventory's `dev` profile.
+
+| Service | Swagger UI | OpenAPI JSON |
+| --- | --- | --- |
+| Order | http://localhost:8080/swagger-ui.html | http://localhost:8080/v3/api-docs |
+| Inventory | http://localhost:8081/swagger-ui.html | http://localhost:8081/v3/api-docs |
+
+1. Open Order Swagger UI, expand **POST /api/v1/orders**, and click **Try it out**.
+2. Enter a new `Idempotency-Key`, for example `swagger-order-1`. Optionally set
+   `X-Correlation-Id` to `swagger-demo-1` to follow both service logs.
+3. Use the supplied body example (`CUST-1001`, `JAVA-BOOK`, quantity `2`) and execute.
+4. Open Inventory Swagger UI and GET `JAVA-BOOK` to see stock decrease from 20 to 18.
+5. Repeat the identical Order POST with the same key to confirm replay without
+   another stock decrease. Use a new key for each genuinely new order.
+
+Inventory's direct reservation operation includes a sample UUID. Direct
+reservations change real in-memory stock independently of Order, so prefer
+Order's POST for the complete application flow. Documented errors show the
+actual API status codes and safe error schema. No authorization token is needed.
+
+Swagger UI and OpenAPI are enabled for this learning application. To disable
+both, set `springdoc.api-docs.enabled=false` and
+`springdoc.swagger-ui.enabled=false`. Only `/api/v1/**` business operations are
+documented; Actuator exposure remains health/info only. Springdoc 2.9.1 is the
+Spring Boot 3 generation described in the [official documentation](https://springdoc.org/v2/).
+
 ## Configuration and failure behavior
 
 Override YAML values with Spring command-line options or environment variables.
@@ -170,8 +198,7 @@ has no comments; domain models use Lombok with constructor invariants.
 
 Use `feat/<reason>` for implementation and the [PR template](.github/pull_request_template.md)
 for criterion → test → actual result evidence. Raw validation reports/logs remain
-local. No remote or published PR exists yet; publication is a separate remaining
-step. See [delivery notes](docs/delivery.md) for review-ready PR text.
+local. The implementation is published in [PR #1](https://github.com/Harsha-T-G/Spring-Microservices/pull/1); further testing is deferred. See [delivery notes](docs/delivery.md) for review-ready PR text.
 
 This is a learning exercise: state and idempotency history are lost on restart,
 attempt/key maps have no eviction, and replicas would not share replay safety.
