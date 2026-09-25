@@ -1,0 +1,30 @@
+sequenceDiagram
+    participant C as Client
+    participant O as Order Service
+    participant B as Circuit breaker
+    participant R as Retry and RestClient
+    participant I as Inventory Service
+    C->>O: Create order
+    O->>B: Reserve with stable order ID and key
+    B->>R: Permit logical operation while CLOSED
+    R->>I: Attempt 1
+    Note over R,I: Connection/response timeout
+    R->>I: Attempt 2 with same order ID and key
+    Note over R,I: Timeout again
+    R-->>B: Dependency failure
+    B-->>O: Record failed logical operation
+    O-->>C: 503 + safe error + correlation ID
+    Note over B: Repeated failed operations reach threshold: OPEN
+    C->>O: Later order request
+    O->>B: Request permission
+    B-->>O: Denied; no HTTP attempt
+    O-->>C: 503 immediately
+    Note over B: After wait, next request can enter HALF_OPEN
+    C->>O: Retry after recovery
+    O->>B: Request trial
+    B->>R: Permit trial operation
+    R->>I: Reserve
+    I-->>R: Successful reservation/replay
+    R-->>B: Success
+    B-->>O: Close circuit, return result
+    O-->>C: 201 CONFIRMED
