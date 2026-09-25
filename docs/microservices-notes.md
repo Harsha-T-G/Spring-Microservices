@@ -1,8 +1,8 @@
 # Microservices fundamentals notes
 
-These are learning notes for the proposed design, not claims about completed
-implementation. Use them with the chapter guide and add observations as each
-behavior is built and tested.
+These learning notes describe the implemented two-service exercise. Use them
+with the [chapter guide](implementation-plan.md), [implementation decisions](adr/0002-service-implementation.md),
+and [verification evidence](test-evidence.md) for the design rationale and observed results.
 
 ## What makes these separate services?
 
@@ -62,7 +62,7 @@ ID matters just as much as preserving the key.
 
 Checking availability, reducing stock, and saving the idempotent reservation
 must happen atomically. A thread-safe map protects individual map operations,
-not a sequence of business operations. The proposed short Inventory lock makes
+not a sequence of business operations. The short Inventory store lock makes
 that sequence indivisible within one application process.
 
 Production would use durable transactional storage with concurrency control
@@ -87,7 +87,7 @@ production designs may also use backoff and jitter.
 ## What happens when only one service completes?
 
 Inventory can reserve stock while Order loses the reply. A network timeout does
-not prove rollback. This is why the proposed design keeps unresolved operation
+not prove rollback. This is why the implementation keeps unresolved operation
 identity and allows a safe retry instead of recording a business rejection.
 
 One ordinary database transaction cannot atomically cover both independent
