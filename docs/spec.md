@@ -1,7 +1,9 @@
 # Specification and acceptance index
 
-Status: exercise requirements captured; explicitly proposed API choices remain
-drafts. No application behavior is implemented by this documentation foundation.
+Status: implementation and automated verification completed on the feature
+branch. Selected API defaults are recorded in the API baseline and ADR 0002.
+See test-evidence.md for results; PR publication, container runtime verification
+and a live demonstration remain outside the completed checks.
 
 [Capability map](../CAPABILITY-MAP.md), [API contract](api-specification.md),
 [boundaries](service-boundaries.md), [structure](project-structure.md),
@@ -33,11 +35,11 @@ drafts. No application behavior is implemented by this documentation foundation.
 | --- | --- |
 | ORD-001 | Valid order becomes CONFIRMED, returns 201 plus Location and order/reservation IDs. |
 | ORD-002 | Inventory receives order ID, quantity, key and correlation ID through RestClientInventoryClient behind InventoryClient. |
-| ORD-003 | Unknown SKU/insufficient stock yield clear rejection; proposed stored REJECTED/422 behavior stays explicit in API spec. |
+| ORD-003 | Unknown SKU/insufficient stock yield clear rejection; selected stored REJECTED/422 behavior stays explicit in API spec. |
 | ORD-004 | Unreachable Inventory yields controlled 503, never fabricated success. |
 | ORD-005 | Completed matching-key replay returns original outcome without Inventory call; changed input returns 409. |
 | ORD-006 | GET returns stored order or 404; list is ascending createdAt, empty array when empty. |
-| ORD-007 | Proposed uncertainty handling retains order ID/key across 503 retries and bounds same-key concurrency waits; technical uncertainty is not business rejection. |
+| ORD-007 | Selected uncertainty handling retains order ID/key across 503 retries and bounds same-key concurrency waits; technical uncertainty is not business rejection. |
 | ORD-008 | Validation and dependency errors use consistent safe envelopes; HTTP details stay outside OrderService. |
 
 ## Resilience
@@ -70,7 +72,7 @@ drafts. No application behavior is implemented by this documentation foundation.
 | DEL-004 | README includes prerequisites/build/test/start/config/endpoints/curl/failure tables/limits; editable diagrams and learning notes cover the exercise. |
 | DEL-005 | PR links specs/diagrams and actual results/limits, excludes disposable reports; ten-minute demo covers required behaviors. |
 
-Detailed HTTP shapes and proposed normalization/rejection/replay/locking choices
-remain in the API contract rather than being duplicated here. Commands and
-planned selectors in the task list must be checked against actual files before
-execution. NOT RUN remains the application status until tests actually execute.
+Detailed HTTP shapes and selected normalization/rejection/replay/locking choices
+remain in the API contract rather than being duplicated here. Implemented
+criteria and actual verification map to tests in [evidence](test-evidence.md).
+DEL-005 remains partial until a real PR is published and a live demo is delivered.

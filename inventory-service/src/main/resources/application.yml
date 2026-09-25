@@ -1,0 +1,25 @@
+spring:
+  application:
+    name: inventory-service
+  jackson:
+    mapper:
+      allow-coercion-of-scalars: false
+    deserialization:
+      accept-float-as-int: false
+server:
+  port: 8081
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  info:
+    env:
+      enabled: true
+info:
+  app:
+    name: ${spring.application.name}
+    version: '@project.version@'
+logging:
+  pattern:
+    level: '%5p [${spring.application.name},%X{correlationId}]'

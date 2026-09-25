@@ -19,7 +19,7 @@ SpringMicroservices/
     test-evidence.md
     skill-provenance.md / skill-sources/
     templates/
-  inventory-service/              planned on feature branch
+  inventory-service/              implemented on feature branch
     pom.xml / mvnw / mvnw.cmd / .mvn/
     src/main/java/org/example/inventory/
       InventoryApplication.java
@@ -27,29 +27,27 @@ SpringMicroservices/
       observability/
     src/main/resources/application.yml
     src/test/java/org/example/inventory/
-      controller/ service/ model/ observability/ support/
-    src/test/resources/
-  order-service/                  same independent Maven layout, planned
+      config/ controller/ model/ observability/
+  order-service/                  same independent Maven layout
     src/main/java/org/example/order/
       OrderApplication.java
       config/ controller/ service/ model/ dto/ store/ exception/
       client/                     InventoryClient + RestClientInventoryClient
       observability/
-  compose.yml                     planned two-service startup
+  scripts/verify-e2e.py            real-process verification
+  compose.yml                     two-service container configuration
   .local/                         ignored logs and disposable reviews
 ```
 
-`org.example.inventory` and `org.example.order` are proposed namespaces based
+`org.example.inventory` and `org.example.order` are namespaces based
 on the starter. Create packages only when needed, not empty placeholders.
 Models use Lombok; DTOs are separate. No JPA entity/repository/security packages,
 generic store interfaces or ServiceImpl pairs are required. Add mappers only
 when conversion is repeated or nontrivial.
 
-Initial main contains foundation files only. The supplied root pom/src remain
-preserved for `feat/independent-services`; they are excluded from the initial
-main commit. Convert their Java 17/Boot 4.1.1 single-service setup into two
-Java 21/Boot 3.x applications on that branch. This is a planned change, not an
-already completed migration.
+Initial main contains foundation files only. The supplied root pom/src are
+preserved in feature-branch commit 7b63c19. Their Java 17/Boot 4.1.1 single-service
+setup is replaced by two Java 21/Boot 3.5.16 applications on feat/independent-services.
 
 Each service must build with its own wrapper and pom without the other's build.
 A custom root parent/aggregator is unnecessary. A root wrapper may remain a

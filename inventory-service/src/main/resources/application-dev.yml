@@ -1,0 +1,5 @@
+inventory:
+  initial-stock:
+    JAVA-BOOK: 20
+    KEYBOARD-01: 10
+    MONITOR-24: 5

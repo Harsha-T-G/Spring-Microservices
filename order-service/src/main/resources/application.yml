@@ -1,0 +1,37 @@
+spring:
+  application:
+    name: order-service
+  jackson:
+    mapper:
+      allow-coercion-of-scalars: false
+    deserialization:
+      accept-float-as-int: false
+server:
+  port: 8080
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  info:
+    env:
+      enabled: true
+info:
+  app:
+    name: ${spring.application.name}
+    version: '@project.version@'
+logging:
+  pattern:
+    level: '%5p [${spring.application.name},%X{correlationId}]'
+inventory:
+  base-url: ${INVENTORY_BASE_URL:http://localhost:8081}
+  connect-timeout-ms: 500
+  response-timeout-ms: 1000
+  breaker:
+    open-wait-ms: 5000
+  retry:
+    max-attempts: 2
+    wait-ms: 100
+
+orders:
+  in-progress-wait-ms: 4000

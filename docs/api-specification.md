@@ -1,6 +1,8 @@
 # API and behavior specification
 
-Status: draft for implementation. **Required** means specified by the exercise.
+Status: implementation baseline. The documented proposals below are selected
+as local implementation decisions under the request to start coding; they remain
+distinct from assignment-mandated requirements. **Required** means specified by the exercise.
 **Proposed** means a concrete choice made here to fill an assignment gap.
 
 ## Common contract
@@ -274,3 +276,13 @@ paths, and resilience limits. It leaves the following choices to us:
 - Exact compatible dependency versions and HTTP transport timeout semantics.
 
 These are reviewable defaults, not additional features mandated by the source.
+
+
+## Selected implementation baseline (2026-09-25)
+
+Use the documented 422 stored-rejection contract, 201 successful replay, stable
+uncertain order identity, and CircuitBreaker(Retry(attempt)) defaults. Boot 3.5.16,
+Java 21, Resilience4j 2.3.0, and test-only WireMock standalone 3.13.2 are pinned.
+Use the JDK HTTP transport explicitly with HTTP/1.1: the initial JDK HTTP/2 upgrade
+to the WireMock server failed with EOF; HTTP/1.1 passed the real client contract
+test. No extra HTTP-client or logging dependency is needed.

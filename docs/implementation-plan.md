@@ -5,7 +5,8 @@
 Source: `harsha_microservices_fundamentals_exercises.txt`, supplied by the user.
 Initial planning began in an empty workspace. The user subsequently supplied
 SpringMicroservices, containing a generated single-service starter. This foundation
-captures specifications and development rules; application migration is the next slice.
+captured specifications and development rules before coding. Application migration
+and behavior slices are now implemented; see tasks and evidence for actual status.
 
 The exercise is about correct behavior across a network boundary. RestClient is
 the communication mechanism; ownership, duplicate handling, partial failures,
