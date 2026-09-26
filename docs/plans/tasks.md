@@ -16,7 +16,7 @@ recorded in [test evidence](../test-evidence.md); the published PR and remaining
 | 08 Timeout/retry | RES-001/002/005 | HTTP config, typed client errors, retry | Real transport delay/refusal/500 and nonretryable 4xx; PASS; see evidence |
 | 09 Breaker/recovery | RES-003/004/006 | Explicit breaker/retry composition | Open zero-call behavior, timed trial/recovery; PASS; see evidence |
 | 10 Observability finish | OBS-004 | Logs and Actuator info/health | Required fields/metadata, exposure, no false connectivity claim; PASS; see evidence |
-| 11 Delivery | DEL-001/002/003/004/005 | Compose, actual evidence, README commands, demo and PR | Both suites and real-service scenarios PASS; Compose config PASS; PR #1 published; container runtime/live demo NOT RUN |
+| 11 Delivery | DEL-001/002/003/004/005 | Compose, actual evidence, README commands, demo and PR | Both suites and real-service scenarios PASS; Compose config and isolated runtime PASS; PR #1 published; live demo NOT RUN |
 
 Each row contains several behaviors; apply one RED/GREEN cycle at a time, not
 one giant test/implementation batch. Resolve only decisions affecting the active
@@ -41,3 +41,11 @@ DOC-001: keep the three diagrams named by the original exercise; remove only
 the additional development-workflow diagram. Two sequence parser failures
 were reproduced and fixed by replacing semicolons inside message text.
 See the latest verification entry in test-evidence.md for executed checks.
+
+## PostgreSQL and Flyway revision
+
+| Slice | Criteria | Observable test and implementation | Status |
+| --- | --- | --- | --- |
+| 12 Inventory persistence | DB-001/002/004 | PostgreSQL migration and dev seed; API stock/replay/concurrency tests run against PostgreSQL | PASS; see PostgreSQL evidence |
+| 13 Order persistence | DB-001/003 | Durable attempt before RestClient call and completed outcome; API replay/retry tests against PostgreSQL | PASS; see PostgreSQL evidence |
+| 14 Deployment and restart | DB-004/005 | Compose two databases, multi-stage images, real-process restart and repeat-key checks | PASS; see PostgreSQL evidence |

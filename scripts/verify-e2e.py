@@ -6,6 +6,7 @@ import socket
 import subprocess
 import threading
 import time
+import uuid
 import urllib.error
 import urllib.request
 
@@ -66,12 +67,27 @@ def main():
         order_port = free_port()
     logs = ROOT / '.local' / 'e2e' / time.strftime('%Y%m%d-%H%M%S')
     logs.mkdir(parents=True, exist_ok=False)
-    processes, handles, evidence = [], [], []
+    processes, handles, evidence, databases = [], [], [], []
+    inventory_db_port, order_db_port = free_port(), free_port()
 
     def record(scenario, **values):
         item = {'scenario': scenario, **values}
         evidence.append(item)
         print(json.dumps(item), flush=True)
+
+    def launch_database(service, port):
+        name = f'microservices-e2e-{service}-{uuid.uuid4().hex[:10]}'
+        command = ['docker', 'run', '--rm', '-d', '--name', name,
+                   '-e', f'POSTGRES_DB={service}', '-e', f'POSTGRES_USER={service}',
+                   '-e', f'POSTGRES_PASSWORD={service}_dev',
+                   '-p', f'127.0.0.1:{port}:5432', 'postgres:17-alpine']
+        subprocess.run(command, check=True, stdout=subprocess.DEVNULL)
+        databases.append(name)
+        def ready():
+            result = subprocess.run(['docker', 'exec', name, 'pg_isready', '-U', service, '-d', service],
+                                    stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            assert result.returncode == 0
+        eventually(ready, 30)
 
     def launch(service, port, extra):
         jar = ROOT / f'{service}-service/target/{service}-service-0.0.1-SNAPSHOT.jar'
@@ -79,8 +95,13 @@ def main():
             raise FileNotFoundError(f'Build {service}-service with ./mvnw clean verify first')
         output = (logs / f'{service}.log').open('a')
         handles.append(output)
+        db_port = inventory_db_port if service == 'inventory' else order_db_port
+        environment = dict(os.environ)
+        environment[f'{service.upper()}_DB_URL'] = f'jdbc:postgresql://127.0.0.1:{db_port}/{service}'
+        environment[f'{service.upper()}_DB_USER'] = service
+        environment[f'{service.upper()}_DB_PASSWORD'] = f'{service}_dev'
         process = subprocess.Popen([args.java, '-jar', str(jar), f'--server.port={port}', *extra],
-                                   cwd=ROOT, stdout=output, stderr=subprocess.STDOUT)
+                                   cwd=ROOT, env=environment, stdout=output, stderr=subprocess.STDOUT)
         processes.append(process)
         def ready():
             assert process.poll() is None, f'{service} exited; inspect {logs}'
@@ -95,6 +116,8 @@ def main():
 
     payload = {'customerId': 'CUST-E2E', 'sku': 'JAVA-BOOK', 'quantity': 2}
     try:
+        launch_database('inventory', inventory_db_port)
+        launch_database('order', order_db_port)
         inventory = launch('inventory', inventory_port, ['--spring.profiles.active=dev'])
         launch('order', order_port, [f'--inventory.base-url=http://127.0.0.1:{inventory_port}'])
         record('independent-startup', order_port=order_port, inventory_port=inventory_port)
@@ -131,17 +154,30 @@ def main():
         record('circuit-open', http=status, seconds=round(elapsed, 3), new_retry_logs=0)
         status, orders, _, _ = request(order_port, '/api/v1/orders')
         assert status == 200 and len(orders) == 2
-        launch('inventory', inventory_port, ['--spring.profiles.active=dev'])
+        inventory = launch('inventory', inventory_port, ['--spring.profiles.active=dev'])
+        stock(18)
+        record('inventory-restart', stock=18, original_reservation_preserved=True)
         def recovered():
             status, body, _, _ = request(order_port, '/api/v1/orders', payload, 'e2e-outage-0', 'e2e-recovery')
             assert status == 201, body
             assert body['status'] == 'CONFIRMED'
             return body
         recovery = eventually(recovered, 12)
-        stock(18)
+        stock(16)
         assert 'State transition from HALF_OPEN to CLOSED' in (logs / 'order.log').read_text()
-        record('recovery-after-inventory-restart', http=201, stock=18, order_id=recovery['id'])
-        record('result', status='PASS', note='Inventory restart resets its in-memory stock and reservation history.')
+        record('recovery-after-inventory-restart', http=201, stock=16, order_id=recovery['id'])
+        status, replay, _, _ = request(order_port, '/api/v1/orders', payload, 'e2e-success')
+        assert status == 201 and replay == original
+        stock(16)
+        stop(processes[-2])
+        launch('order', order_port, [f'--inventory.base-url=http://127.0.0.1:{inventory_port}'])
+        status, persisted, _, _ = request(order_port, '/api/v1/orders/' + original['id'])
+        assert status == 200 and persisted == original
+        status, replay, _, _ = request(order_port, '/api/v1/orders', payload, 'e2e-success')
+        assert status == 201 and replay == original
+        stock(16)
+        record('order-restart', order_id=original['id'], replay_preserved=True, stock=16)
+        record('result', status='PASS', note='Both service restarts preserve stock, orders and replay history.')
         (logs / 'results.json').write_text(json.dumps(evidence, indent=2) + '\n')
         print(f'Local evidence: {logs}', flush=True)
     finally:
@@ -149,6 +185,8 @@ def main():
             stop(process)
         for output in handles:
             output.close()
+        for name in reversed(databases):
+            subprocess.run(['docker', 'stop', name], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
 if __name__ == '__main__':

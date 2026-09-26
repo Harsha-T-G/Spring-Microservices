@@ -44,8 +44,10 @@ addy-LICENSE.txt  6f202f8bd568cd730dbb2b0d1f8e243bc74c2fa1f64dbce9b2c7ea08bd5c9f
 Java/Spring/testing conventions were also reconciled with the user's earlier
 “Plan SDD and TDD for Spring Boot POC” task and its saved project files at
 [Spring-Boot-POC revision](https://github.com/Harsha-T-G/Spring-Boot-POC-/tree/56a775ce6327b3cd0bfd7d2231c3941dc6f3887e).
-Only relevant conventions were adapted. PostgreSQL/JPA/security, blanket
-approval requirements and unrelated dependencies were not inherited.
+Only relevant conventions were adapted. PostgreSQL, JPA and security were not
+inherited from the previous project. PostgreSQL was later chosen explicitly
+for this exercise; JPA, blanket approval requirements and unrelated
+dependencies remain excluded.
 
 ## Changes over time
 

@@ -6,20 +6,18 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
 import org.example.order.dto.CreateOrderRequest;
 
+@RequiredArgsConstructor
 public class OrderAttempt {
     @Getter
-    private final UUID id = UUID.randomUUID();
+    private final UUID id;
     @Getter
-    private final Instant createdAt = Instant.now();
+    private final Instant createdAt;
     private final CreateOrderRequest request;
-    private final ReentrantLock lock = new ReentrantLock();
-
-    public OrderAttempt(CreateOrderRequest request) {
-        this.request = request;
-    }
+    private final ReentrantLock lock;
 
     public boolean matches(CreateOrderRequest candidate) {
         return request.equals(candidate);

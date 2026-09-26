@@ -52,8 +52,8 @@ action lacks authorization. This skill does not authorize publication or deploym
 ## Project constraints
 
 Two independent Java 21/Boot 3.x applications, synchronous RestClient, separate
-in-memory state, Lombok domain models and bounded resilience. Do not inherit
-auth/CSRF/database/extra logging from the previous POC. Use available framework
+PostgreSQL data ownership, Flyway migrations, Lombok domain models and bounded
+resilience. Do not inherit auth/CSRF/extra logging from the previous POC. Use available framework
 support before adding dependencies, preserving atomic stock, stable operation
 identity and meaningful tests.
 

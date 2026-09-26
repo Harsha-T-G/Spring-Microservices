@@ -2,8 +2,8 @@
 
 Status: implementation and automated verification completed on the feature
 branch. Selected API defaults are recorded in the API baseline and ADR 0002.
-See test-evidence.md for results; container runtime verification and a live demonstration remain outside
-the completed checks. PR #1 is published.
+See test-evidence.md for results; an isolated Compose runtime check passed.
+A live presentation remains outside the completed checks. PR #1 is published.
 
 [Capability map](../CAPABILITY-MAP.md), [API contract](api-specification.md),
 [boundaries](service-boundaries.md), [structure](project-structure.md),
@@ -87,3 +87,16 @@ in the exercise: service diagram, successful-order sequence, and Inventory-unava
 | API-001 | Both services serve Swagger UI and OpenAPI JSON with service title/version and only their business API paths. |
 | API-002 | POST operations expose required Idempotency-Key, optional X-Correlation-Id, valid example bodies, success and safe error schemas/statuses. |
 | DOC-001 | Exactly the three required editable Mermaid diagrams remain; all render and documentation links/previews agree. |
+
+## Persistence revision
+
+The assignment permits in-memory storage; the user chose PostgreSQL and Flyway.
+ADR 0003 records the design and supersedes earlier in-memory wording.
+
+| ID | Acceptance criterion |
+| --- | --- |
+| DB-001 | Each service owns a separate PostgreSQL database and applies its own Flyway schema; neither reads the other's tables. |
+| DB-002 | Inventory stock, reservations and replay results survive service restart; concurrent reservations never oversell or reuse a key for changed input. |
+| DB-003 | Order attempts, stable IDs, final outcomes and replay survive service restart; technical failure retains the attempt for safe retry. |
+| DB-004 | `dev` stock seed runs once per database; default profile remains unseeded; Compose uses durable volumes and starts without prebuilt JARs. |
+| DB-005 | Tests run against isolated PostgreSQL and a real-process check demonstrates restart persistence. |

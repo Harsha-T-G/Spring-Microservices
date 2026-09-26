@@ -130,7 +130,7 @@ configuration, metrics/tracing, deployment operations, and contract evolution.
 Choose additional infrastructure based on requirements rather than assuming
 every microservice needs a gateway, discovery server, or message broker.
 
-In-memory restarts can lose orders, reservations, and replay protection.
-Independent restarts can produce inconsistent stock/order histories. These are
-documented learning limitations, not guarantees the exercise can solve with
+PostgreSQL preserves orders, reservations, stock and replay history across
+application restarts. It does not make the two databases and HTTP exchange one
+atomic transaction. Independent failures can still require reconciliation beyond
 an additional retry.

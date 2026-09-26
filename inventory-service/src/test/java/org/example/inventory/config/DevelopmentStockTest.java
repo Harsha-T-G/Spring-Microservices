@@ -11,9 +11,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
+@SpringBootTest(properties = "spring.datasource.url=jdbc:tc:postgresql:17-alpine:///inventory_dev_test")
 @AutoConfigureMockMvc
-@ActiveProfiles("dev")
+@ActiveProfiles({"test", "dev"})
 class DevelopmentStockTest {
     private final MockMvc mvc;
 

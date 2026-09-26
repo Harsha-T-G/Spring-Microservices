@@ -12,10 +12,12 @@ import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
@@ -33,6 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(properties = "inventory.breaker.open-wait-ms=500")
 @AutoConfigureMockMvc
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+@ActiveProfiles("test")
 class OrderApiTest {
     private static final WireMockServer INVENTORY = new WireMockServer(options().dynamicPort());
     private static final String RESERVATION_ID = "223e4567-e89b-42d3-a456-426614174000";
@@ -44,11 +47,13 @@ class OrderApiTest {
 
     private final MockMvc mvc;
     private final ObjectMapper json;
+    private final JdbcTemplate jdbc;
 
     @Autowired
-    OrderApiTest(MockMvc mvc, ObjectMapper json) {
+    OrderApiTest(MockMvc mvc, ObjectMapper json, JdbcTemplate jdbc) {
         this.mvc = mvc;
         this.json = json;
+        this.jdbc = jdbc;
     }
 
     @DynamicPropertySource
@@ -59,6 +64,7 @@ class OrderApiTest {
     @BeforeEach
     void resetInventory() {
         INVENTORY.resetAll();
+        jdbc.update("DELETE FROM orders");
     }
 
     @AfterAll

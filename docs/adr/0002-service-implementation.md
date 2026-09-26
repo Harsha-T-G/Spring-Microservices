@@ -39,10 +39,11 @@ Status: selected for implementation under the user's request to start coding,
   separately owned by each service. Constructor injection and conventional
   controller/service/client/store boundaries keep responsibilities visible.
 - Use existing Boot logging and narrow Actuator exposure. No Security, CSRF,
-  database, AOP starter, logging encoder or extra HTTP transport is needed.
-- Container images copy the tested executable JAR and use a non-root Java 21
-  runtime. This keeps Maven/testing outside the runtime image and means builds
-  must precede Compose. Major-version image tags are suitable for this local
+  AOP starter, logging encoder or extra HTTP transport is needed. Storage was
+  subsequently revised by ADR 0003.
+- Container images originally copied the tested executable JAR; ADR 0003
+  supersedes this with multi-stage Docker builds and a non-root runtime. The
+  original design required builds before Compose. Major-version image tags are suitable for this local
   exercise; deployment would pin scanned image digests.
 
 ## Limits and alternatives
@@ -50,8 +51,8 @@ Status: selected for implementation under the user's request to start coding,
 A single application would avoid distributed uncertainty, but would not teach
 this assignment's boundaries. Database transactions, unique idempotency records,
 retention rules and reconciliation would be necessary with persistent data or
-multiple replicas. In-memory maps grow without eviction and lose safety history
-on restart. No cancellation or reservation-release workflow exists.
+multiple replicas. The original in-memory maps lost safety history on restart; ADR 0003
+replaces them with durable records. No cancellation or reservation-release workflow exists.
 
 Automatic fallback success would misrepresent stock, so unavailable Inventory
 always prevents confirmation. Order health checks only the local application.

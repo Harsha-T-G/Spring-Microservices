@@ -8,15 +8,17 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.annotation.DirtiesContext;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
@@ -28,17 +30,26 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest(properties = {"inventory.initial-stock.JAVA-BOOK=20", "inventory.initial-stock.KEYBOARD-01=10"})
+@SpringBootTest
 @AutoConfigureMockMvc
-@DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_EACH_TEST_METHOD)
+@ActiveProfiles("test")
 class InventoryApiTest {
     private final MockMvc mvc;
     private final ObjectMapper json;
+    private final JdbcTemplate jdbc;
 
     @Autowired
-    InventoryApiTest(MockMvc mvc, ObjectMapper json) {
+    InventoryApiTest(MockMvc mvc, ObjectMapper json, JdbcTemplate jdbc) {
         this.mvc = mvc;
         this.json = json;
+        this.jdbc = jdbc;
+    }
+
+    @BeforeEach
+    void resetStock() {
+        jdbc.update("DELETE FROM reservations");
+        jdbc.update("DELETE FROM product_stock");
+        jdbc.update("INSERT INTO product_stock (sku, available_quantity) VALUES ('JAVA-BOOK', 20), ('KEYBOARD-01', 10)");
     }
 
     @Test

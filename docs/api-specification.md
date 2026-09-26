@@ -193,7 +193,7 @@ stock; a new UUID with the old key would then conflict.
 A duplicate REJECTED order remains rejected even if conditions later change;
 creating a genuinely new order uses a new key. A timeout does not establish
 rejection. Retained identities and reservation records provide replay safety
-only while both in-memory stores survive. No cancellation or stock-release
+across application restarts because both services persist their own records. No cancellation or stock-release
 endpoint is added for this exercise.
 
 ## RestClient and resilience
@@ -292,5 +292,5 @@ test. No extra HTTP-client or logging dependency is needed.
 Both services expose `/swagger-ui.html` and `/v3/api-docs` for their own
 `/api/v1/**` operations. The documentation includes request examples, required
 idempotency headers, optional correlation headers, and explicit outcome schemas.
-Swagger sends normal HTTP requests and mutates the same in-memory data as curl.
+Swagger sends normal HTTP requests and mutates the same PostgreSQL-backed data as curl.
 Use a new key for a new operation and retain the key/body for a replay.

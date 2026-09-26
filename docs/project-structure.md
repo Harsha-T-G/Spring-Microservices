@@ -1,7 +1,8 @@
 # Structure and starter transition
 
 Use conventional layer-based Java packages in each independent application.
-Do not copy the earlier database/security project structure wholesale.
+Use small local JDBC stores and Flyway; do not copy the earlier JPA/security
+project structure wholesale.
 
 ```text
 SpringMicroservices/
@@ -25,7 +26,8 @@ SpringMicroservices/
       InventoryApplication.java
       config/ controller/ service/ model/ dto/ store/ exception/
       observability/
-    src/main/resources/application.yml
+    src/main/resources/application.yml / application-dev.yml
+    src/main/resources/db/migration/ / db/dev/
     src/test/java/org/example/inventory/
       config/ controller/ model/ observability/
   order-service/                  same independent Maven layout
@@ -35,7 +37,7 @@ SpringMicroservices/
       client/                     InventoryClient + RestClientInventoryClient
       observability/
   scripts/verify-e2e.py            real-process verification
-  compose.yml                     two-service container configuration
+  compose.yml                     two services and two PostgreSQL databases
   .local/                         ignored logs and disposable reviews
 ```
 

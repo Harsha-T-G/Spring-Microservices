@@ -64,7 +64,7 @@ the work; it is not the first time tests are written.
 ## Planned code responsibilities
 
 Each service has its own `controller`, `service`, `model`, `dto`, `exception`,
-`config`, and in-memory storage responsibilities. Order additionally has a
+`config`, and PostgreSQL-backed storage responsibilities. Order additionally has a
 `client` package. Use constructor injection throughout.
 
 | Component | Responsibility |
@@ -78,8 +78,8 @@ Each service has its own `controller`, `service`, `model`, `dto`, `exception`,
 | Exception advice | Produce the agreed error envelope without leaking internals. |
 | Request filter | Manage correlation ID, MDC lifetime, and request completion logging. |
 
-Avoid generic repository frameworks or abstractions beyond what these small
-in-memory services need. A simple local store is sufficient.
+Use Spring JDBC for small local stores and Flyway for versioned schema.
+Keep one database per service; neither service reads the other database.
 
 ## Acceptance and test matrix
 
@@ -130,7 +130,7 @@ reports; preserve these durable specs and required test evidence.
 | 5–7 min | Simulate slow/unavailable Inventory, show retry and circuit opening. |
 | 7–8 min | Restore Inventory and demonstrate recovery. |
 | 8–9 min | Follow one correlation ID across both logs. |
-| 9–10 min | Show both passing suites and explain in-memory limitations. |
+| 9–10 min | Show both passing suites and explain the remaining cross-service transaction limitation. |
 
-Next implementation slice: Inventory stock lookup and unknown-SKU behavior,
+The original next slice was Inventory stock lookup and unknown-SKU behavior,
 preceded by one failing public API test.

@@ -1,6 +1,10 @@
 spring:
   application:
     name: order-service
+  datasource:
+    url: ${ORDER_DB_URL:jdbc:postgresql://localhost:5434/order}
+    username: ${ORDER_DB_USER:order}
+    password: ${ORDER_DB_PASSWORD:order_dev}
   jackson:
     mapper:
       allow-coercion-of-scalars: false

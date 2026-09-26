@@ -58,10 +58,11 @@ No authentication/authorization, gateway, discovery server, messaging, distribut
 transaction, frontend, Kubernetes, or cloud deployment. Inventory does not call
 Order back. Do not add these features to complete a fundamentals exercise.
 
-In-memory data disappears at restart, is not shared across replicas, and grows
-without a retention policy. Single-process locks do not coordinate multiple
-instances. Production requires durable storage, transactional reservation and
-idempotency records, uniqueness constraints, and an approach to reconciliation.
+Each service now has its own durable PostgreSQL database and local Flyway
+migrations. Transactional stock changes and reservation uniqueness prevent
+overselling. Order request locks remain process-local; multiple Order replicas
+would need distributed coordination. Production also needs retention policies, distributed Order coordination,
+backups and an approach to reconciliation.
 
 A timeout is an unknown outcome: stock may already have been reserved. Repeating
 the same key and order ID can recover the reservation while the original data
@@ -80,8 +81,8 @@ are derived copies; update them from the .mmd sources when flows change.
 flowchart LR
     C[Client] -->|HTTP| O[Order Service :8080]
     O -->|Synchronous RestClient POST| I[Inventory Service :8081]
-    O --- OD[(Orders and order idempotency)]
-    I --- ID[(Stock and reservations)]
+    O --- OD[(Order PostgreSQL)]
+    I --- ID[(Inventory PostgreSQL)]
 ```
 
 ## Successful order sequence
@@ -92,11 +93,11 @@ sequenceDiagram
     participant O as Order Service
     participant I as Inventory Service
     C->>O: POST /orders + key + correlation ID
-    O->>O: Validate and retain stable order ID for key
+    O->>O: Persist attempt and stable order ID for key
     O->>I: POST /inventory/{sku}/reservations + same headers
-    I->>I: Atomically check key, reserve stock, store result
+    I->>I: Commit stock and reservation atomically
     I-->>O: 201 RESERVED + reservation ID
-    O->>O: Store CONFIRMED order
+    O->>O: Persist CONFIRMED order
     O-->>C: 201 order + Location + correlation ID
     C->>O: Repeat same order and key
     O-->>C: Original completed order, no Inventory call

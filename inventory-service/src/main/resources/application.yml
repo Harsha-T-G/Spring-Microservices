@@ -1,6 +1,10 @@
 spring:
   application:
     name: inventory-service
+  datasource:
+    url: ${INVENTORY_DB_URL:jdbc:postgresql://localhost:5433/inventory}
+    username: ${INVENTORY_DB_USER:inventory}
+    password: ${INVENTORY_DB_PASSWORD:inventory_dev}
   jackson:
     mapper:
       allow-coercion-of-scalars: false

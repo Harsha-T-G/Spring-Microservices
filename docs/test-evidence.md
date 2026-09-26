@@ -209,3 +209,50 @@ The earlier real two-process E2E evidence remains historical; it was not rerun
 for this Swagger/documentation update. Swagger's server endpoints/assets and
 specification are covered by MockMvc; interactive browser clicks, container
 startup and the live demo remain in the deferred testing phase.
+
+## PostgreSQL and Flyway revision — 2026-09-26
+
+The exercise says each service **may** use in-memory data. The user instead
+requested PostgreSQL with Flyway; ADR 0003 and DB-001–005 record the revised
+contract. Earlier in-memory E2E results and limitations above describe the prior
+revision only.
+
+The first focused migration run (`red-migration`) did not compile because the
+new test profile annotation import was missing. This was setup failure and is
+**not** counted as a TDD RED. The first complete Inventory PostgreSQL API run
+(`inventory-focused-1`) then exposed a genuine defect: reservation requests
+returned 500 because PostgreSQL advisory lock returns `void` and the JDBC code
+tried to read it as `Long`. After executing the function without that mapping,
+`inventory-focused-2` passed. The first Order PostgreSQL API/concurrency run
+(`order-focused-1`) passed. No invented RED history is claimed for the initial
+persistence choice.
+
+| Criteria | Executed verification | Result |
+| --- | --- | --- |
+| DB-001/002/004 | Inventory API, dev/default stock and concurrent key/stock cases against Testcontainers PostgreSQL 17 | Focused suite PASS; `./mvnw -q clean verify` PASS, 42 tests, zero failures/errors/skips |
+| DB-001/003 | Order API, WireMock remote boundary, retry/replay and bounded same-key concurrency against Testcontainers PostgreSQL 17 | Focused suite PASS; `./mvnw -q clean verify` PASS, 63 tests, zero failures/errors/skips |
+| DB-002/003/005 | `python3 scripts/verify-e2e.py --java /opt/homebrew/opt/openjdk@21/libexec/openjdk.jdk/Contents/Home/bin/java` | PASS; real processes and disposable PostgreSQL containers: stock 20 → 18, Inventory restart still 18, recovered reservation 16, Order restart retains original ID and replay without further decrement |
+| DB-004 | `docker compose config --quiet` | PASS; service/database wiring and YAML valid |
+
+The process test also passed prior exercise scenarios: success, duplicate,
+insufficient stock, common correlation ID in both logs, Inventory outage, open
+circuit with zero new retry logs, and recovery. Test evidence and process logs
+are under ignored `.local/postgres-work/project/.local/`; they are not staged.
+Database containers created by the script were stopped by its cleanup.
+
+Three source Mermaid diagrams remain. `services.mmd` now shows separate databases
+and `order-success.mmd` shows durable attempt/stock/outcome writes. The
+cross-service transaction and multi-replica Order-lock limitations remain in
+ADR 0003.
+
+Final revision check after replacing the unbounded in-process Order lock map
+with a fixed lock stripe set: Order `./mvnw -q clean verify` PASS, 63 tests;
+real-process E2E rerun PASS with stock retained at 18 after Inventory restart
+and at 16 after Order restart/replay. Both updated Mermaid sources rendered
+successfully with Mermaid CLI and headless Chrome. Docker Compose built both
+images from source without prebuilt JARs (`docker compose build inventory-service
+order-service` PASS), then `docker compose up -d --no-build` started two healthy
+PostgreSQL containers and both applications. GET JAVA-BOOK returned 20 and a
+Compose Order POST returned a CONFIRMED order with a reservation ID. The isolated
+Compose stack and its temporary named volumes were removed after the smoke test;
+normal user `docker compose down` retains its named volumes.

@@ -3,7 +3,8 @@
 Two independently built Java 21 / Spring Boot 3.5.16 applications demonstrate
 synchronous service communication with Spring RestClient. Inventory owns stock
 and atomic reservations. Order owns orders and calls Inventory through its own
-HTTP contract. Each service uses separate in-memory state and domain types.
+HTTP contract. Each service owns a separate PostgreSQL database and its own domain types. Flyway
+creates and versions each schema.
 
 Implementation is on `feat/independent-services`; the initial `main` remains the
 documentation/toolchain foundation. See [verification evidence](docs/test-evidence.md)
@@ -12,7 +13,7 @@ for actual results and [acceptance criteria](docs/spec.md) for scope.
 ## Build and test
 
 Install JDK 21 and set `JAVA_HOME` to it. Python 3 is needed only for the optional
-end-to-end verification script; Docker Compose is needed only for containers.
+end-to-end verification script; Docker is needed for the PostgreSQL-backed tests and local containers.
 The checked-in Maven 3.9.16 wrappers download Maven and dependencies on first use.
 
 Run from the repository root:
@@ -36,7 +37,30 @@ Focused examples:
 
 ## Run the services
 
-After building, use separate terminals from the repository root:
+From the repository root, Docker Compose builds and starts the two services and
+their two PostgreSQL databases. Prebuilt JARs are not needed:
+
+```sh
+docker compose up --build -d
+docker compose ps
+docker compose logs -f
+```
+
+Wait for `http://localhost:8081/actuator/health` and
+`http://localhost:8080/actuator/health` to return UP before sending requests.
+Stop without deleting data using `docker compose down`. The named volumes keep
+stock, reservations and orders across application and container restarts.
+`docker compose down -v` removes the demo databases and their history.
+
+For separate local Java processes, build both JARs and start only the databases:
+
+```sh
+docker compose up -d inventory-db order-db
+(cd inventory-service && ./mvnw clean package)
+(cd order-service && ./mvnw clean package)
+```
+
+Then run each command in a separate terminal from the repository root:
 
 ```sh
 java -jar inventory-service/target/inventory-service-0.0.1-SNAPSHOT.jar --spring.profiles.active=dev
@@ -46,25 +70,18 @@ java -jar inventory-service/target/inventory-service-0.0.1-SNAPSHOT.jar --spring
 java -jar order-service/target/order-service-0.0.1-SNAPSHOT.jar
 ```
 
-Inventory listens on 8081 and Order on 8080. Only the explicit `dev` profile
-seeds JAVA-BOOK=20, KEYBOARD-01=10, MONITOR-24=5. The default Inventory profile
-starts with no demonstration stock. Stop processes with Ctrl+C.
+Inventory listens on 8081 and Order on 8080. The local JDBC defaults target
+PostgreSQL on 127.0.0.1 ports 5433 and 5434 with Compose's demo credentials.
+For anything beyond local development, supply `INVENTORY_DB_URL`,
+`INVENTORY_DB_USER`, `INVENTORY_DB_PASSWORD` and their `ORDER_DB_*` equivalents.
+Only the explicit Inventory `dev` profile seeds JAVA-BOOK=20,
+KEYBOARD-01=10 and MONITOR-24=5, and Flyway applies that seed once per database.
+The default Inventory profile has no demonstration stock. Use Ctrl+C to stop
+local processes; `docker compose down` stops the databases.
 
-Alternatively, after both builds:
-
-```sh
-docker compose up --build -d
-docker compose logs -f
-docker compose down
-```
-
-The images package the already-tested JARs on a Java 21 runtime and run as a
-non-root numeric user. Compose publishes ports on localhost and sets Order's
-Inventory URL to `http://inventory-service:8081`. Wait for each health endpoint
-before sending demo orders; Compose does not imply dependency readiness.
-`ORDER_PORT` and `INVENTORY_PORT` override host ports. No persistent volumes are
-used. Container startup has not been executed in the recorded verification run;
-Compose configuration validation and native Java process verification have.
+Compose publishes the API and database ports on localhost and sets Order's
+Inventory URL to `http://inventory-service:8081`. `ORDER_PORT`,
+`INVENTORY_PORT`, `ORDER_DB_PORT` and `INVENTORY_DB_PORT` override host ports.
 
 ## APIs and examples
 
@@ -118,7 +135,7 @@ Start both services using the commands above, with Inventory's `dev` profile.
    another stock decrease. Use a new key for each genuinely new order.
 
 Inventory's direct reservation operation includes a sample UUID. Direct
-reservations change real in-memory stock independently of Order, so prefer
+reservations change real PostgreSQL stock independently of Order, so prefer
 Order's POST for the complete application flow. Documented errors show the
 actual API status codes and safe error schema. No authorization token is needed.
 
@@ -145,7 +162,8 @@ For example `--inventory.response-timeout-ms=750` or
 | `inventory.retry.wait-ms` | 100 | 1–1000 ms |
 | `inventory.breaker.open-wait-ms` | 5000 | Positive milliseconds |
 | `orders.in-progress-wait-ms` | 4000 | 1–4000 ms for a matching request already processing |
-| `inventory.initial-stock` | Empty outside dev | Inventory map of SKU to nonnegative stock |
+| `spring.flyway.locations` | Schema; dev adds seed | Versioned migrations, no repeat seed on restart |
+| `*_DB_URL`, `*_DB_USER`, `*_DB_PASSWORD` | Local Compose defaults | Separate JDBC connection per service |
 
 The breaker wraps Retry: `CircuitBreaker(Retry(HTTP attempt))`. Its count-based
 window and minimum calls are 4, failure threshold 50%, and half-open allowance
@@ -177,10 +195,11 @@ python3 scripts/verify-e2e.py
 ```
 
 The script uses `JAVA_HOME/bin/java` or `java` on PATH; `--java /path/to/java`
-selects one explicitly. It verifies success, duplicate, rejection, correlation,
-Inventory shutdown, circuit opening and recovery. Inventory restart resets its
-in-memory data; this limitation is explicitly included in the evidence. Raw logs
-stay in ignored `.local/e2e/`.
+selects one explicitly. It creates two disposable PostgreSQL containers and
+verifies success, duplicate, rejection, correlation, Inventory shutdown,
+circuit opening, recovery and persistence through both application restarts.
+The script stops only its own temporary database containers. Raw logs stay in
+ignored `.local/e2e/`.
 
 See [curated evidence](docs/test-evidence.md), the [ten-minute demonstration](docs/demo.md),
 [service diagram](docs/diagrams/services.mmd), [success sequence](docs/diagrams/order-success.mmd),
@@ -198,15 +217,17 @@ has no comments; domain models use Lombok with constructor invariants.
 
 Use `feat/<reason>` for implementation and the [PR template](.github/pull_request_template.md)
 for criterion → test → actual result evidence. Raw validation reports/logs remain
-local. The implementation is published in [PR #1](https://github.com/Harsha-T-G/Spring-Microservices/pull/1); further testing is deferred. See [delivery notes](docs/delivery.md) for review-ready PR text.
+local. The implementation is published in [PR #1](https://github.com/Harsha-T-G/Spring-Microservices/pull/1); PostgreSQL-backed suites, real-process restarts,
+and an isolated Compose smoke test have now passed. See [delivery notes](docs/delivery.md) for review-ready PR text.
 
-This is a learning exercise: state and idempotency history are lost on restart,
-attempt/key maps have no eviction, and replicas would not share replay safety.
-There is no stock release, persistence, distributed transaction, authentication,
-CSRF configuration, gateway, discovery, messaging or frontend. Existing Boot
+This is a learning exercise: each service now persists its data and idempotency
+history in PostgreSQL, but Order's request locks are process-local, so multiple
+Order replicas require additional coordination. There is no stock release,
+cross-service transaction, authentication, CSRF configuration, gateway,
+discovery, messaging or frontend. Existing Boot
 SLF4J/Logback provides logging; no extra logging stack is added. The default
 latency check is an isolated transport measurement, not a whole-system SLA.
 Boot 3.5.16 is the required Boot 3 exercise baseline and its final OSS release;
 a deployed system needs a supported maintenance baseline. Container tags are
-Java-major tags, not immutable deployment digests. Production improvements are
-explained in the [design decision](docs/adr/0002-service-implementation.md).
+Java-major tags, not immutable deployment digests. The storage decision and production limits are explained in
+[ADR 0003](docs/adr/0003-postgresql-persistence.md).

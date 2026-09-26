@@ -8,10 +8,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.tomakehurst.wiremock.WireMockServer;
 import com.github.tomakehurst.wiremock.client.WireMock;
 import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
@@ -26,6 +29,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest(properties = "orders.in-progress-wait-ms=50")
 @AutoConfigureMockMvc
+@ActiveProfiles("test")
 class OrderConcurrencyTest {
     private static final WireMockServer INVENTORY = new WireMockServer(options().dynamicPort());
     private static final String REQUEST = "{\"customerId\":\"CUST-1\",\"sku\":\"JAVA-BOOK\",\"quantity\":2}";
@@ -36,11 +40,13 @@ class OrderConcurrencyTest {
 
     private final MockMvc mvc;
     private final ObjectMapper json;
+    private final JdbcTemplate jdbc;
 
     @Autowired
-    OrderConcurrencyTest(MockMvc mvc, ObjectMapper json) {
+    OrderConcurrencyTest(MockMvc mvc, ObjectMapper json, JdbcTemplate jdbc) {
         this.mvc = mvc;
         this.json = json;
+        this.jdbc = jdbc;
     }
 
     @DynamicPropertySource
@@ -51,6 +57,11 @@ class OrderConcurrencyTest {
     @AfterAll
     static void stopInventory() {
         INVENTORY.stop();
+    }
+
+    @BeforeEach
+    void resetOrders() {
+        jdbc.update("DELETE FROM orders");
     }
 
     @Test
