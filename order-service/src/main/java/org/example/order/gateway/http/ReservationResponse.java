@@ -1,4 +1,4 @@
-package org.example.order.dto;
+package org.example.order.gateway.http;
 
 import java.util.UUID;
 

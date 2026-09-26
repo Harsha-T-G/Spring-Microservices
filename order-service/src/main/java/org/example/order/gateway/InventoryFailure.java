@@ -1,4 +1,4 @@
-package org.example.order.client;
+package org.example.order.gateway;
 
 import lombok.Getter;
 

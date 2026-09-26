@@ -14,7 +14,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.web.client.RestClient;
 
-import org.example.order.client.InventoryFailure;
+import org.example.order.gateway.InventoryFailure;
 
 @Configuration
 @Slf4j

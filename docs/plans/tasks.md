@@ -57,3 +57,9 @@ See the latest verification entry in test-evidence.md for executed checks.
 | --- | --- | --- | --- |
 | 16 One PostgreSQL database | DB-006/007 | One Compose database/volume and one `.env` pair; each service has its own schema and Flyway history | PASS; see shared database evidence |
 | 17 Shared-database integration | DB-008 | Both services boot on the same database, real Order-to-Inventory flow, replay and restarts | PASS; see shared database evidence |
+
+## Inventory HTTP gateway structure
+
+| Slice | Criteria | Observable test and implementation | Status |
+| --- | --- | --- | --- |
+| 18 Separate port and adapter | ORD-002 | Keep `OrderService` on an Order-owned gateway interface, put RestClient and remote DTOs in its HTTP adapter, retain request headers, response validation and resilience behavior | PASS; see HTTP gateway evidence |

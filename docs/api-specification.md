@@ -198,10 +198,11 @@ endpoint is added for this exercise.
 
 ## RestClient and resilience
 
-Required: `InventoryClient` interface and `RestClientInventoryClient`
-implementation. OrderService calls the interface with the order ID, SKU,
-quantity, key, and correlation ID. HTTP URLs, serialization, response mapping,
-and transport configuration stay outside OrderService.
+Required: Order-owned `gateway.InventoryClient` interface and
+`gateway.http.RestClientInventoryClient` implementation. OrderService calls the
+interface with the order ID, SKU, quantity, key, and correlation ID, and receives
+the reservation ID. HTTP URLs, request/response DTOs, serialization, response
+mapping, and transport configuration stay outside OrderService.
 
 Use one configured RestClient. It supports request factories for the underlying
 HTTP transport and status handlers for response mapping. Configure transport

@@ -34,7 +34,7 @@ A live presentation remains outside the completed checks. PR #1 is published.
 | ID | Acceptance criterion |
 | --- | --- |
 | ORD-001 | Valid order becomes CONFIRMED, returns 201 plus Location and order/reservation IDs. |
-| ORD-002 | Inventory receives order ID, quantity, key and correlation ID through RestClientInventoryClient behind InventoryClient. |
+| ORD-002 | Inventory receives order ID, quantity, key and correlation ID through `RestClientInventoryClient` behind the Order-owned `InventoryClient` interface. `OrderService` depends only on that interface; HTTP request/response DTOs stay in the adapter. |
 | ORD-003 | Unknown SKU/insufficient stock yield clear rejection; selected stored REJECTED/422 behavior stays explicit in API spec. |
 | ORD-004 | Unreachable Inventory yields controlled 503, never fabricated success. |
 | ORD-005 | Completed matching-key replay returns original outcome without Inventory call; changed input returns 409. |

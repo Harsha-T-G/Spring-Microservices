@@ -1,4 +1,4 @@
-package org.example.order.client;
+package org.example.order.gateway.http;
 
 import java.io.IOException;
 import java.util.UUID;
@@ -18,8 +18,8 @@ import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
-import org.example.order.dto.ReservationRequest;
-import org.example.order.dto.ReservationResponse;
+import org.example.order.gateway.InventoryClient;
+import org.example.order.gateway.InventoryFailure;
 
 @Component
 @RequiredArgsConstructor
@@ -30,7 +30,7 @@ public class RestClientInventoryClient implements InventoryClient {
     private final CircuitBreaker inventoryCircuitBreaker;
 
     @Override
-    public ReservationResponse reserve(UUID orderId, String sku, int quantity, String key, String correlationId) {
+    public UUID reserve(UUID orderId, String sku, int quantity, String key, String correlationId) {
         try {
             return inventoryCircuitBreaker.executeSupplier(() ->
                     inventoryRetry.executeSupplier(() -> attempt(orderId, sku, quantity, key, correlationId)));
@@ -39,7 +39,7 @@ public class RestClientInventoryClient implements InventoryClient {
         }
     }
 
-    private ReservationResponse attempt(UUID orderId, String sku, int quantity, String key, String correlationId) {
+    private UUID attempt(UUID orderId, String sku, int quantity, String key, String correlationId) {
         try {
             var response = inventoryRestClient.post().uri("/api/v1/inventory/{sku}/reservations", sku)
                     .header("Idempotency-Key", key).header("X-Correlation-Id", correlationId)
@@ -52,7 +52,7 @@ public class RestClientInventoryClient implements InventoryClient {
                     || quantity != reservation.quantity() || !"RESERVED".equals(reservation.status())) {
                 throw new InventoryFailure(InventoryFailure.Kind.CONTRACT, "INVENTORY_CONTRACT_ERROR");
             }
-            return reservation;
+            return reservation.reservationId();
         } catch (ResourceAccessException exception) {
             throw new InventoryFailure(InventoryFailure.Kind.UNAVAILABLE, "INVENTORY_UNAVAILABLE");
         } catch (RestClientException exception) {

@@ -65,15 +65,16 @@ the work; it is not the first time tests are written.
 
 Each service has its own `controller`, `service`, `model`, `dto`, `exception`,
 `config`, and PostgreSQL-backed storage responsibilities. Order additionally has a
-`client` package. Use constructor injection throughout.
+`gateway` package for its Inventory-facing interface and outcome, with the
+RestClient adapter under `gateway.http`. Use constructor injection throughout.
 
 | Component | Responsibility |
 | --- | --- |
 | Controllers | Bind and validate HTTP input, delegate, choose response status/headers. |
 | InventoryService | Apply stock rules and reservation idempotency atomically. |
 | OrderService | Coordinate order identity, idempotency, reservation outcome, and storage. |
-| InventoryClient | Order-owned interface for reserving stock using Order-owned types. |
-| RestClientInventoryClient | Build the HTTP request; map remote status/body/transport failures into meaningful client outcomes. |
+| InventoryClient | Order-owned gateway interface for reserving stock; returns the reservation ID without exposing the remote DTO. |
+| RestClientInventoryClient | HTTP adapter that builds the request, validates the remote response, and maps transport/status failures into meaningful gateway outcomes. |
 | Configuration | Build the HTTP client and resilience policies from configuration. |
 | Exception advice | Produce the agreed error envelope without leaking internals. |
 | Request filter | Manage correlation ID, MDC lifetime, and request completion logging. |

@@ -7,8 +7,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import org.example.order.client.InventoryClient;
-import org.example.order.client.InventoryFailure;
+import org.example.order.gateway.InventoryClient;
+import org.example.order.gateway.InventoryFailure;
 import org.example.order.config.OrderProperties;
 import org.example.order.dto.CreateOrderRequest;
 import org.example.order.exception.OrderException;
@@ -52,9 +52,9 @@ public class OrderService {
     private Order reserve(OrderAttempt attempt, CreateOrderRequest request, String key, String correlationId) {
         log.info("orderId={} status=RESERVING", attempt.getId());
         try {
-            var reservation = inventory.reserve(attempt.getId(), request.sku(), request.quantity(), key, correlationId);
+            UUID reservationId = inventory.reserve(attempt.getId(), request.sku(), request.quantity(), key, correlationId);
             Order order = store.save(new Order(attempt.getId(), request.customerId(), request.sku(), request.quantity(),
-                    OrderStatus.CONFIRMED, reservation.reservationId(), null, attempt.getCreatedAt()));
+                    OrderStatus.CONFIRMED, reservationId, null, attempt.getCreatedAt()));
             log.info("orderId={} reservationId={} status={}", order.getId(), order.getReservationId(), order.getStatus());
             return order;
         } catch (InventoryFailure failure) {

@@ -34,7 +34,8 @@ SpringMicroservices/
     src/main/java/org/example/order/
       OrderApplication.java
       config/ controller/ service/ model/ dto/ store/ exception/
-      client/                     InventoryClient + RestClientInventoryClient
+      gateway/                    InventoryClient + InventoryFailure
+        http/                     RestClientInventoryClient + remote DTOs
       observability/
   scripts/verify-e2e.py            real-process verification
   compose.yml                     two services and one PostgreSQL database

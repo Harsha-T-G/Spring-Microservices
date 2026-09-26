@@ -304,3 +304,25 @@ temporary volume. Local Maven logs, process logs, and rendered SVG remain in
 ignored `.local/shared-db-work/`; no generated review artifacts are committed.
 Existing user `inventory-data` and `order-data` volumes have not been modified
 or migrated into the new `postgres-data` volume.
+
+## Order HTTP gateway package refactor — 2026-09-27
+
+ORD-002: the interface and its RestClient implementation already existed in
+`order.client`. The user requested a clearer gateway package boundary. The
+Order-owned `InventoryClient` and `InventoryFailure` now live in `gateway`;
+`RestClientInventoryClient` and the remote request/response DTOs live in
+`gateway.http`. `OrderService` receives only the reservation UUID and imports no
+transport DTO or `RestClient` type. The public HTTP contract and resilience
+policy did not change.
+
+This is a behavior-preserving refactor on an existing GREEN baseline, not a new
+failing-to-passing feature cycle. `OrderApiTest` passed before and after the
+change. Both `./mvnw -q clean verify` suites passed on Java 21. A real two-process
+run of `scripts/verify-e2e.py` passed with one disposable database: both schemas
+and Flyway histories, Order 201 and stock 20 → 18, replay without extra stock
+change, 422 insufficient-stock result, common correlation ID, Inventory outage,
+open circuit without retry traffic, recovery and restart persistence.
+
+The service diagram remains accurate: Order calls Inventory over HTTP. No extra
+diagram or dependency was needed. Raw test and process logs remain in ignored
+`.local/gateway-work/project/.local/` and are not committed.
