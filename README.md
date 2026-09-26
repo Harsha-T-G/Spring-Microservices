@@ -3,8 +3,8 @@
 Two independently built Java 21 / Spring Boot 3.5.16 applications demonstrate
 synchronous service communication with Spring RestClient. Inventory owns stock
 and atomic reservations. Order owns orders and calls Inventory through its own
-HTTP contract. Each service owns a separate PostgreSQL database and its own domain types. Flyway
-creates and versions each schema.
+HTTP contract. Both services use one PostgreSQL database, with separate `inventory` and
+`orders` schemas. Each owns its domain types and Flyway migration history.
 
 Implementation is on `feat/independent-services`; the initial `main` remains the
 documentation/toolchain foundation. See [verification evidence](docs/test-evidence.md)
@@ -38,14 +38,15 @@ Focused examples:
 ## Run the services
 
 From the repository root, create your local credentials file from the tracked
-example. Edit the usernames and passwords in `.env` if you want different
-local values. Docker Compose reads `.env` automatically and passes each pair
-to its PostgreSQL container and matching Spring service. `.env` is Git-ignored;
+example. Edit `DB_USER` and `DB_PASSWORD` in `.env` if you want different local
+values. Docker Compose reads `.env` automatically and passes the same pair to
+the PostgreSQL container and both Spring services. `.env` is Git-ignored;
 the example credentials are for local development only. Prebuilt JARs are not
 needed:
 
 ```sh
 cp -n .env.example .env
+docker compose down --remove-orphans
 docker compose up --build -d
 docker compose ps
 docker compose logs -f
@@ -53,37 +54,40 @@ docker compose logs -f
 
 Wait for `http://localhost:8081/actuator/health` and
 `http://localhost:8080/actuator/health` to return UP before sending requests.
-Stop without deleting data using `docker compose down`. The named volumes keep
+Stop without deleting data using `docker compose down`. The named volume keeps
 stock, reservations and orders across application and container restarts.
-`docker compose down -v` removes the demo databases and their history.
+`docker compose down -v` removes the new demo database and its history.
 If you change credentials after a database volume has been initialized, update
 the existing database role as well; editing `.env` alone does not change it.
 
-For separate local Java processes, build both JARs and start only the databases:
+For separate local Java processes, build both JARs and start only PostgreSQL:
 
 ```sh
-docker compose up -d inventory-db order-db
+docker compose up -d postgres-db
 (cd inventory-service && ./mvnw clean package)
 (cd order-service && ./mvnw clean package)
 ```
 
-Then run each command in a separate terminal from the repository root:
+Then run each command in a separate terminal from the repository root.
+Sourcing `.env` is required in each Java terminal when it contains custom
+credentials:
 
 ```sh
+set -a; source .env; set +a
 java -jar inventory-service/target/inventory-service-0.0.1-SNAPSHOT.jar --spring.profiles.active=dev
 ```
 
 ```sh
+set -a; source .env; set +a
 java -jar order-service/target/order-service-0.0.1-SNAPSHOT.jar
 ```
 
 Inventory listens on 8081 and Order on 8080. The local JDBC defaults target
-PostgreSQL on 127.0.0.1 ports 5433 and 5434 with the example credentials.
+the same PostgreSQL database on 127.0.0.1 port 5433 with the example credentials.
 Docker Compose reads `.env` automatically; standalone `java -jar` processes do
-not, so export the `*_DB_USER` and `*_DB_PASSWORD` values if you change them
-from the application defaults.
-For anything beyond local development, supply `INVENTORY_DB_URL`,
-`INVENTORY_DB_USER`, `INVENTORY_DB_PASSWORD` and their `ORDER_DB_*` equivalents.
+not, so export `DB_USER` and `DB_PASSWORD` when using custom values. For
+anything beyond local development, supply `DB_URL`, `DB_USER` and `DB_PASSWORD`
+from your runtime environment.
 Only the explicit Inventory `dev` profile seeds JAVA-BOOK=20,
 KEYBOARD-01=10 and MONITOR-24=5, and Flyway applies that seed once per database.
 The default Inventory profile has no demonstration stock. Use Ctrl+C to stop
@@ -91,7 +95,7 @@ local processes; `docker compose down` stops the databases.
 
 Compose publishes the API and database ports on localhost and sets Order's
 Inventory URL to `http://inventory-service:8081`. `ORDER_PORT`,
-`INVENTORY_PORT`, `ORDER_DB_PORT` and `INVENTORY_DB_PORT` override host ports.
+`INVENTORY_PORT` and `DB_PORT` override host ports.
 
 ## APIs and examples
 
@@ -173,7 +177,7 @@ For example `--inventory.response-timeout-ms=750` or
 | `inventory.breaker.open-wait-ms` | 5000 | Positive milliseconds |
 | `orders.in-progress-wait-ms` | 4000 | 1–4000 ms for a matching request already processing |
 | `spring.flyway.locations` | Schema; dev adds seed | Versioned migrations, no repeat seed on restart |
-| `*_DB_URL`, `*_DB_USER`, `*_DB_PASSWORD` | Local Compose defaults | Separate JDBC connection per service |
+| `DB_URL`, `DB_USER`, `DB_PASSWORD` | Local Compose defaults | Shared database, separate JDBC pools and schemas |
 
 The breaker wraps Retry: `CircuitBreaker(Retry(HTTP attempt))`. Its count-based
 window and minimum calls are 4, failure threshold 50%, and half-open allowance
@@ -205,10 +209,10 @@ python3 scripts/verify-e2e.py
 ```
 
 The script uses `JAVA_HOME/bin/java` or `java` on PATH; `--java /path/to/java`
-selects one explicitly. It creates two disposable PostgreSQL containers and
+selects one explicitly. It creates one disposable PostgreSQL container and
 verifies success, duplicate, rejection, correlation, Inventory shutdown,
 circuit opening, recovery and persistence through both application restarts.
-The script stops only its own temporary database containers. Raw logs stay in
+The script stops only its own temporary database container. Raw logs stay in
 ignored `.local/e2e/`.
 
 See [curated evidence](docs/test-evidence.md), the [ten-minute demonstration](docs/demo.md),
@@ -239,5 +243,10 @@ SLF4J/Logback provides logging; no extra logging stack is added. The default
 latency check is an isolated transport measurement, not a whole-system SLA.
 Boot 3.5.16 is the required Boot 3 exercise baseline and its final OSS release;
 a deployed system needs a supported maintenance baseline. Container tags are
-Java-major tags, not immutable deployment digests. The storage decision and production limits are explained in
-[ADR 0003](docs/adr/0003-postgresql-persistence.md).
+Java-major tags, not immutable deployment digests. The current database topology and production limits are explained in
+[ADR 0004](docs/adr/0004-shared-postgresql.md).
+
+The previous two-database Compose volumes are not automatically imported into
+the new single database. `docker compose down --remove-orphans` stops old
+containers but preserves their volumes. Keep those volumes if they contain
+data you need; see [ADR 0004](docs/adr/0004-shared-postgresql.md).

@@ -273,3 +273,34 @@ Order usernames/passwords returned Inventory's seeded stock and Order's UP
 health status; the test containers and their temporary volumes were removed.
 No application Java behavior changed, so the existing service suites were not
 repeated for this configuration-only follow-up.
+
+## Shared PostgreSQL database — 2026-09-27
+
+DB-006–008: the user selected one PostgreSQL database and one credential pair.
+ADR 0004 supersedes ADR 0003's two-database topology. Both services now connect
+to `microservices` with the same `DB_URL`, `DB_USER`, and `DB_PASSWORD`.
+Inventory uses the `inventory` schema and Order uses `orders`; each has its own
+`flyway_schema_history` table. No service queries the other's tables.
+
+The first configuration check expected one Compose PostgreSQL service and the
+same JDBC URL for both applications. It failed against the old topology with
+`expected one postgres-db, found ['inventory-db', 'order-db']`. After the
+configuration change it passed, along with `docker compose config --quiet`.
+This is the genuine RED/GREEN cycle for the configuration contract.
+
+| Verification | Result |
+| --- | --- |
+| Inventory focused PostgreSQL tests (`InventoryApiTest`, `DevelopmentStockTest`, `DefaultStockTest`) | PASS |
+| Order focused PostgreSQL tests (`OrderApiTest`, `OrderConcurrencyTest`) | PASS |
+| Each service's `./mvnw -q clean verify` | PASS |
+| Real two-process `scripts/verify-e2e.py` against one disposable PostgreSQL database | PASS; both schema histories and all domain tables exist, Order POST 201, stock 20 → 18, replay stable, insufficient stock 422, correlation in both logs, outage/circuit behavior, recovery, and both restart checks |
+| `docker compose build inventory-service order-service` | PASS; source-built images |
+| Isolated `docker compose up -d --no-build` smoke test | PASS; one database and both apps started, Order POST 201, stock 20 → 18 |
+| `services.mmd` Mermaid CLI render | PASS |
+
+The E2E script stopped its disposable database. The Compose smoke test used
+temporary host ports and removed only its isolated project containers and
+temporary volume. Local Maven logs, process logs, and rendered SVG remain in
+ignored `.local/shared-db-work/`; no generated review artifacts are committed.
+Existing user `inventory-data` and `order-data` volumes have not been modified
+or migrated into the new `postgres-data` volume.

@@ -79,7 +79,8 @@ Each service has its own `controller`, `service`, `model`, `dto`, `exception`,
 | Request filter | Manage correlation ID, MDC lifetime, and request completion logging. |
 
 Use Spring JDBC for small local stores and Flyway for versioned schema.
-Keep one database per service; neither service reads the other database.
+Use a separate schema per service in one PostgreSQL database; neither service
+reads the other service's tables.
 
 ## Acceptance and test matrix
 

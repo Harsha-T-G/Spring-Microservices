@@ -2,9 +2,14 @@ spring:
   application:
     name: inventory-service
   datasource:
-    url: ${INVENTORY_DB_URL:jdbc:postgresql://localhost:5433/inventory}
-    username: ${INVENTORY_DB_USER:inventory}
-    password: ${INVENTORY_DB_PASSWORD:inventory_dev}
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/microservices}
+    username: ${DB_USER:microservices}
+    password: ${DB_PASSWORD:microservices_dev}
+    hikari:
+      schema: inventory
+  flyway:
+    schemas: inventory
+    default-schema: inventory
   jackson:
     mapper:
       allow-coercion-of-scalars: false

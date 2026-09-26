@@ -20,9 +20,11 @@ Order owns orders and customer-facing order status. Inventory owns stock and
 reservation rules. Order can request a reservation but cannot update stock.
 Inventory records the supplied order ID without managing the order lifecycle.
 
-Sharing a database or internal classes allows one application to depend on
-implementation details and bypass ownership. Matching JSON contracts do not
-require shared Java DTO classes.
+Directly querying another service's tables or sharing internal classes allows
+one application to depend on implementation details and bypass ownership. The
+shared PostgreSQL server is split into service-owned schemas; applications
+still communicate through HTTP. Matching JSON contracts do not require shared
+Java DTO classes.
 
 ## What coupling still exists?
 
@@ -131,6 +133,6 @@ Choose additional infrastructure based on requirements rather than assuming
 every microservice needs a gateway, discovery server, or message broker.
 
 PostgreSQL preserves orders, reservations, stock and replay history across
-application restarts. It does not make the two databases and HTTP exchange one
+application restarts. One database does not make the two service processes and HTTP exchange one
 atomic transaction. Independent failures can still require reconciliation beyond
 an additional retry.

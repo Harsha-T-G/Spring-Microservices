@@ -37,7 +37,7 @@ SpringMicroservices/
       client/                     InventoryClient + RestClientInventoryClient
       observability/
   scripts/verify-e2e.py            real-process verification
-  compose.yml                     two services and two PostgreSQL databases
+  compose.yml                     two services and one PostgreSQL database
   .local/                         ignored logs and disposable reviews
 ```
 

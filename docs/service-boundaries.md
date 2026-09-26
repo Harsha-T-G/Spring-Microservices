@@ -7,7 +7,7 @@ selected implementation choices are identified in the API specification.
 
 | Service | Owns | Does | Must not do |
 | --- | --- | --- | --- |
-| Order, port 8080 | Orders, statuses, order idempotency records | Validate orders, request reservations, store confirmed/rejected outcomes, provide order reads. | Read Inventory's collection/database, calculate available stock, import Inventory classes. |
+| Order, port 8080 | Orders, statuses, order idempotency records | Validate orders, request reservations, store confirmed/rejected outcomes, provide order reads. | Read Inventory's tables, calculate available stock, import Inventory classes. |
 | Inventory, port 8081 | ProductStock, Reservations, reservation idempotency records | Find stock, enforce availability, reserve atomically, return original reservations for duplicates. | Create orders, decide customer order status, import Order classes. |
 
 Models required by the exercise:
@@ -50,7 +50,8 @@ single database transaction.
 
 The split introduces unavailable dependencies, latency, response loss, partial
 completion, retries, and contract compatibility. Sharing internal models or
-storage would bind deployments and allow one service to bypass another's rules.
+directly accessing another service's tables would bind deployments and allow
+one service to bypass another's rules.
 
 ## Non-goals and limits
 
@@ -58,11 +59,12 @@ No authentication/authorization, gateway, discovery server, messaging, distribut
 transaction, frontend, Kubernetes, or cloud deployment. Inventory does not call
 Order back. Do not add these features to complete a fundamentals exercise.
 
-Each service now has its own durable PostgreSQL database and local Flyway
-migrations. Transactional stock changes and reservation uniqueness prevent
-overselling. Order request locks remain process-local; multiple Order replicas
-would need distributed coordination. Production also needs retention policies, distributed Order coordination,
-backups and an approach to reconciliation.
+Both services now use one durable PostgreSQL database, with separate
+`inventory` and `orders` schemas and Flyway histories. Transactional stock
+changes and reservation uniqueness prevent overselling. Order request locks
+remain process-local; multiple Order replicas would need distributed
+coordination. Production also needs retention policies, backups and an
+approach to reconciliation.
 
 A timeout is an unknown outcome: stock may already have been reserved. Repeating
 the same key and order ID can recover the reservation while the original data
@@ -81,8 +83,8 @@ are derived copies; update them from the .mmd sources when flows change.
 flowchart LR
     C[Client] -->|HTTP| O[Order Service :8080]
     O -->|Synchronous RestClient POST| I[Inventory Service :8081]
-    O --- OD[(Order PostgreSQL)]
-    I --- ID[(Inventory PostgreSQL)]
+    O -->|JDBC orders schema| DB[(PostgreSQL microservices DB)]
+    I -->|JDBC inventory schema| DB
 ```
 
 ## Successful order sequence

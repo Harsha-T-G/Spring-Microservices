@@ -95,9 +95,21 @@ ADR 0003 records the design and supersedes earlier in-memory wording.
 
 | ID | Acceptance criterion |
 | --- | --- |
-| DB-001 | Each service owns a separate PostgreSQL database and applies its own Flyway schema; neither reads the other's tables. |
+| DB-001 (superseded by DB-007) | The first persistence revision used separate PostgreSQL databases. |
 | DB-002 | Inventory stock, reservations and replay results survive service restart; concurrent reservations never oversell or reuse a key for changed input. |
 | DB-003 | Order attempts, stable IDs, final outcomes and replay survive service restart; technical failure retains the attempt for safe retry. |
 | DB-004 | `dev` stock seed runs once per database; default profile remains unseeded; Compose uses durable volumes and starts without prebuilt JARs. |
 | DB-005 | Tests run against isolated PostgreSQL and a real-process check demonstrates restart persistence. |
-| DB-006 | A tracked `.env.example` documents local database usernames/passwords; a Git-ignored `.env` supplies Compose credentials to each database and its matching service. |
+| DB-006 | A tracked `.env.example` documents one local database username/password; a Git-ignored `.env` supplies the same credentials to PostgreSQL and both services. |
+
+## Shared database revision
+
+The user selected one PostgreSQL database for Order and Inventory. Each service
+keeps its own tables and Flyway history in a separate schema. This replaces the
+physical database separation in DB-001 and ADR 0003 without changing the HTTP
+contract or allowing cross-service table access.
+
+| ID | Acceptance criterion |
+| --- | --- |
+| DB-007 | Compose runs one PostgreSQL container and one database; both services connect to it with one credential pair, using separate `inventory` and `orders` schemas and independent Flyway histories. |
+| DB-008 | A real two-service run proves both migrations coexist in one database, Order can reserve Inventory stock over HTTP, and restart/replay behavior remains intact. |

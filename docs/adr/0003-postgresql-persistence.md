@@ -1,7 +1,7 @@
 # ADR 0003: Separate PostgreSQL databases and Flyway migrations
 
-Status: accepted by the user's explicit storage request, 2026-09-26. This
-supersedes the in-memory choice in ADR 0002. The exercise says each service
+Status: superseded by ADR 0004 for database topology. Accepted for durable
+storage on 2026-09-26; it superseded the in-memory choice in ADR 0002. The exercise says each service
 *may* use in-memory data; it does not require that choice.
 
 Inventory owns product stock and reservation history in its PostgreSQL database.

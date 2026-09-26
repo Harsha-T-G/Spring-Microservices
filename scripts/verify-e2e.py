@@ -68,26 +68,39 @@ def main():
     logs = ROOT / '.local' / 'e2e' / time.strftime('%Y%m%d-%H%M%S')
     logs.mkdir(parents=True, exist_ok=False)
     processes, handles, evidence, databases = [], [], [], []
-    inventory_db_port, order_db_port = free_port(), free_port()
+    db_port = free_port()
 
     def record(scenario, **values):
         item = {'scenario': scenario, **values}
         evidence.append(item)
         print(json.dumps(item), flush=True)
 
-    def launch_database(service, port):
-        name = f'microservices-e2e-{service}-{uuid.uuid4().hex[:10]}'
+    def launch_database(port):
+        name = f'microservices-e2e-{uuid.uuid4().hex[:10]}'
         command = ['docker', 'run', '--rm', '-d', '--name', name,
-                   '-e', f'POSTGRES_DB={service}', '-e', f'POSTGRES_USER={service}',
-                   '-e', f'POSTGRES_PASSWORD={service}_dev',
+                   '-e', 'POSTGRES_DB=microservices', '-e', 'POSTGRES_USER=microservices',
+                   '-e', 'POSTGRES_PASSWORD=microservices_e2e',
                    '-p', f'127.0.0.1:{port}:5432', 'postgres:17-alpine']
         subprocess.run(command, check=True, stdout=subprocess.DEVNULL)
         databases.append(name)
         def ready():
-            result = subprocess.run(['docker', 'exec', name, 'pg_isready', '-U', service, '-d', service],
+            result = subprocess.run(['docker', 'exec', name, 'pg_isready', '-U', 'microservices', '-d', 'microservices'],
                                     stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             assert result.returncode == 0
         eventually(ready, 30)
+
+    def verify_schemas():
+        query = "SELECT table_schema || '.' || table_name FROM information_schema.tables " \
+                "WHERE table_schema IN ('inventory', 'orders') ORDER BY table_schema, table_name"
+        result = subprocess.run(['docker', 'exec', databases[0], 'psql', '-U', 'microservices',
+                                 '-d', 'microservices', '-Atqc', query],
+                                check=True, text=True, capture_output=True)
+        found = set(result.stdout.splitlines())
+        expected = {'inventory.flyway_schema_history', 'inventory.product_stock',
+                    'inventory.reservations', 'orders.flyway_schema_history', 'orders.orders'}
+        assert expected <= found, f'Missing shared-database tables: {expected - found}'
+        record('shared-database', database='microservices', schemas=['inventory', 'orders'],
+               independent_flyway_histories=True)
 
     def launch(service, port, extra):
         jar = ROOT / f'{service}-service/target/{service}-service-0.0.1-SNAPSHOT.jar'
@@ -95,11 +108,10 @@ def main():
             raise FileNotFoundError(f'Build {service}-service with ./mvnw clean verify first')
         output = (logs / f'{service}.log').open('a')
         handles.append(output)
-        db_port = inventory_db_port if service == 'inventory' else order_db_port
         environment = dict(os.environ)
-        environment[f'{service.upper()}_DB_URL'] = f'jdbc:postgresql://127.0.0.1:{db_port}/{service}'
-        environment[f'{service.upper()}_DB_USER'] = service
-        environment[f'{service.upper()}_DB_PASSWORD'] = f'{service}_dev'
+        environment['DB_URL'] = f'jdbc:postgresql://127.0.0.1:{db_port}/microservices'
+        environment['DB_USER'] = 'microservices'
+        environment['DB_PASSWORD'] = 'microservices_e2e'
         process = subprocess.Popen([args.java, '-jar', str(jar), f'--server.port={port}', *extra],
                                    cwd=ROOT, env=environment, stdout=output, stderr=subprocess.STDOUT)
         processes.append(process)
@@ -116,11 +128,11 @@ def main():
 
     payload = {'customerId': 'CUST-E2E', 'sku': 'JAVA-BOOK', 'quantity': 2}
     try:
-        launch_database('inventory', inventory_db_port)
-        launch_database('order', order_db_port)
+        launch_database(db_port)
         inventory = launch('inventory', inventory_port, ['--spring.profiles.active=dev'])
         launch('order', order_port, [f'--inventory.base-url=http://127.0.0.1:{inventory_port}'])
         record('independent-startup', order_port=order_port, inventory_port=inventory_port)
+        verify_schemas()
         stock(20)
         status, original, headers, elapsed = request(order_port, '/api/v1/orders', payload, 'e2e-success', 'e2e-success')
         assert status == 201 and original['status'] == 'CONFIRMED', original

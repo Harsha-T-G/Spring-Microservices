@@ -19,7 +19,8 @@ Suggested description:
 > Selective retry and an explicit circuit breaker return controlled 503s without
 > fabricating successful orders. Correlation IDs connect both services' logs.
 > Lombok models, API validation, safe error envelopes and local health/info follow
-> the project conventions, with separate PostgreSQL databases, Flyway migrations, and no added
+> the project conventions, with one PostgreSQL database, separate service schemas and Flyway histories,
+> and no added
 > security or logging stack.
 >
 > Validation: see the latest PostgreSQL entry in test-evidence.md for the
