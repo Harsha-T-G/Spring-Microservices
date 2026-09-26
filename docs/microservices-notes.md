@@ -1,8 +1,8 @@
 # Microservices fundamentals notes
 
-These are learning notes for the proposed design, not claims about completed
-implementation. Use them with the chapter guide and add observations as each
-behavior is built and tested.
+These learning notes describe the implemented two-service exercise. Use them
+with the [chapter guide](implementation-plan.md), [implementation decisions](adr/0002-service-implementation.md),
+and [verification evidence](test-evidence.md) for the design rationale and observed results.
 
 ## What makes these separate services?
 
@@ -20,9 +20,11 @@ Order owns orders and customer-facing order status. Inventory owns stock and
 reservation rules. Order can request a reservation but cannot update stock.
 Inventory records the supplied order ID without managing the order lifecycle.
 
-Sharing a database or internal classes allows one application to depend on
-implementation details and bypass ownership. Matching JSON contracts do not
-require shared Java DTO classes.
+Directly querying another service's tables or sharing internal classes allows
+one application to depend on implementation details and bypass ownership. The
+shared PostgreSQL server is split into service-owned schemas; applications
+still communicate through HTTP. Matching JSON contracts do not require shared
+Java DTO classes.
 
 ## What coupling still exists?
 
@@ -62,7 +64,7 @@ ID matters just as much as preserving the key.
 
 Checking availability, reducing stock, and saving the idempotent reservation
 must happen atomically. A thread-safe map protects individual map operations,
-not a sequence of business operations. The proposed short Inventory lock makes
+not a sequence of business operations. The short Inventory store lock makes
 that sequence indivisible within one application process.
 
 Production would use durable transactional storage with concurrency control
@@ -87,7 +89,7 @@ production designs may also use backoff and jitter.
 ## What happens when only one service completes?
 
 Inventory can reserve stock while Order loses the reply. A network timeout does
-not prove rollback. This is why the proposed design keeps unresolved operation
+not prove rollback. This is why the implementation keeps unresolved operation
 identity and allows a safe retry instead of recording a business rejection.
 
 One ordinary database transaction cannot atomically cover both independent
@@ -130,7 +132,7 @@ configuration, metrics/tracing, deployment operations, and contract evolution.
 Choose additional infrastructure based on requirements rather than assuming
 every microservice needs a gateway, discovery server, or message broker.
 
-In-memory restarts can lose orders, reservations, and replay protection.
-Independent restarts can produce inconsistent stock/order histories. These are
-documented learning limitations, not guarantees the exercise can solve with
+PostgreSQL preserves orders, reservations, stock and replay history across
+application restarts. One database does not make the two service processes and HTTP exchange one
+atomic transaction. Independent failures can still require reconciliation beyond
 an additional retry.

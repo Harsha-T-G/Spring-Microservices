@@ -9,7 +9,7 @@
 - **Idempotency key:** stable operation identity, bound to normalized request data.
 - **Correlation ID:** tracing value for an HTTP request; it may change on a later
   client retry and is not a substitute for the idempotency key.
-- **Logical reservation operation:** one proposed breaker observation wrapping
+- **Logical reservation operation:** one breaker observation wrapping
   at most two HTTP attempts.
 - **Capability:** documentation/delivery grouping, not an additional microservice.
 
@@ -20,6 +20,14 @@ Initial inspection found a single generated Boot 4.1.1/Java 17 starter with
 Lombok and devtools, and no Git metadata. This is input to preserve, not evidence
 of compliance with the exercise's Java 21/Boot 3.x/two-service requirement.
 
-Current scope is the documentation and agentic foundation. The first application
-slice is the independent-service scaffold, followed by Inventory stock lookup
-using TDD. Choices marked proposed in the API contract remain proposals.
+Implementation now exists on feat/independent-services: two Java 21 / Boot
+3.5.16 applications, atomic Inventory reservations, Order RestClient integration,
+replay identity, bounded retry/circuit breaker and correlation handling. Initial
+main remains the foundation. API defaults were selected as implementation
+choices under the request to start coding; they are not extra assignment mandates.
+
+See docs/test-evidence.md for verified behavior and remaining delivery limits.
+The root generated starter is preserved in feature-branch history; build from
+each service directory. Origin is Harsha-T-G/Spring-Microservices; implementation is in PR #1.
+Swagger UI supports manual API exploration in both services. The diagrams are
+exactly the three required by the exercise.

@@ -1,5 +1,5 @@
 flowchart LR
     C[Client] -->|HTTP| O[Order Service :8080]
     O -->|Synchronous RestClient POST| I[Inventory Service :8081]
-    O --- OD[(Orders and order idempotency)]
-    I --- ID[(Stock and reservations)]
+    O -->|JDBC orders schema| DB[(PostgreSQL microservices DB)]
+    I -->|JDBC inventory schema| DB

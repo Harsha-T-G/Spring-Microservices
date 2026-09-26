@@ -1,0 +1,43 @@
+spring:
+  application:
+    name: inventory-service
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5433/microservices}
+    username: ${DB_USER:microservices}
+    password: ${DB_PASSWORD:microservices_dev}
+    hikari:
+      schema: inventory
+  flyway:
+    schemas: inventory
+    default-schema: inventory
+  jackson:
+    mapper:
+      allow-coercion-of-scalars: false
+    deserialization:
+      accept-float-as-int: false
+server:
+  port: 8081
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  info:
+    env:
+      enabled: true
+info:
+  app:
+    name: ${spring.application.name}
+    version: '@project.version@'
+logging:
+  pattern:
+    level: '%5p [${spring.application.name},%X{correlationId}]'
+
+springdoc:
+  paths-to-match: /api/v1/**
+  override-with-generic-response: false
+  swagger-ui:
+    path: /swagger-ui.html
+    disable-swagger-default-url: true
+    operations-sorter: method
+    tags-sorter: alpha

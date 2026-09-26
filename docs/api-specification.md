@@ -1,6 +1,8 @@
 # API and behavior specification
 
-Status: draft for implementation. **Required** means specified by the exercise.
+Status: implementation baseline. The documented proposals below are selected
+as local implementation decisions under the request to start coding; they remain
+distinct from assignment-mandated requirements. **Required** means specified by the exercise.
 **Proposed** means a concrete choice made here to fill an assignment gap.
 
 ## Common contract
@@ -191,15 +193,16 @@ stock; a new UUID with the old key would then conflict.
 A duplicate REJECTED order remains rejected even if conditions later change;
 creating a genuinely new order uses a new key. A timeout does not establish
 rejection. Retained identities and reservation records provide replay safety
-only while both in-memory stores survive. No cancellation or stock-release
+across application restarts because both services persist their own records. No cancellation or stock-release
 endpoint is added for this exercise.
 
 ## RestClient and resilience
 
-Required: `InventoryClient` interface and `RestClientInventoryClient`
-implementation. OrderService calls the interface with the order ID, SKU,
-quantity, key, and correlation ID. HTTP URLs, serialization, response mapping,
-and transport configuration stay outside OrderService.
+Required: Order-owned `gateway.InventoryClient` interface and
+`gateway.http.RestClientInventoryClient` implementation. OrderService calls the
+interface with the order ID, SKU, quantity, key, and correlation ID, and receives
+the reservation ID. HTTP URLs, request/response DTOs, serialization, response
+mapping, and transport configuration stay outside OrderService.
 
 Use one configured RestClient. It supports request factories for the underlying
 HTTP transport and status handlers for response mapping. Configure transport
@@ -274,3 +277,21 @@ paths, and resilience limits. It leaves the following choices to us:
 - Exact compatible dependency versions and HTTP transport timeout semantics.
 
 These are reviewable defaults, not additional features mandated by the source.
+
+
+## Selected implementation baseline (2026-09-25)
+
+Use the documented 422 stored-rejection contract, 201 successful replay, stable
+uncertain order identity, and CircuitBreaker(Retry(attempt)) defaults. Boot 3.5.16,
+Java 21, Resilience4j 2.3.0, and test-only WireMock standalone 3.13.2 are pinned.
+Use the JDK HTTP transport explicitly with HTTP/1.1: the initial JDK HTTP/2 upgrade
+to the WireMock server failed with EOF; HTTP/1.1 passed the real client contract
+test. No extra HTTP-client or logging dependency is needed.
+
+## Interactive API documentation
+
+Both services expose `/swagger-ui.html` and `/v3/api-docs` for their own
+`/api/v1/**` operations. The documentation includes request examples, required
+idempotency headers, optional correlation headers, and explicit outcome schemas.
+Swagger sends normal HTTP requests and mutates the same PostgreSQL-backed data as curl.
+Use a new key for a new operation and retain the key/body for a replay.

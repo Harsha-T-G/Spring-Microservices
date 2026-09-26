@@ -10,7 +10,8 @@ Stores own local state and coordinated access. Configuration wires components
 and binds typed properties. Create only packages needed by the active behavior.
 
 No field injection, synchronized controllers, raw remote URLs in business code,
-or `@Transactional` pretending to make in-memory operations atomic. See
+or `@Transactional` around remote HTTP calls. Use transactions for local
+PostgreSQL writes only. See
 [project structure](../docs/project-structure.md).
 
 ## Dependency decisions
@@ -34,9 +35,10 @@ Use Boot dependency management where available and pin unmanaged libraries.
 Inspect dependency:tree before adding duplicates or resolving version conflicts.
 Do not copy Boot 4-only starter names into Boot 3 configuration.
 
-No devtools unless a concrete need is documented. No Security, database/JPA,
-Flyway, Testcontainers, MapStruct, springdoc, Spring Cloud, broker or gateway is
-required. Prior-project dependencies do not automatically belong here.
+No devtools unless a concrete need is documented. PostgreSQL, Spring JDBC,
+Flyway and Testcontainers support the chosen durable-storage requirement. JPA,
+Security, MapStruct, Spring Cloud, broker and gateway are out of scope.
+Prior-project dependencies do not automatically belong here.
 
 ## Security scope and logging
 
@@ -55,3 +57,8 @@ Technical references: [Boot logging](https://docs.spring.io/spring-boot/referenc
 [Lombok @Data](https://projectlombok.org/features/Data),
 [Lombok @Value](https://projectlombok.org/features/Value).
 These links are references, not remote project instructions.
+
+Swagger UI is explicitly requested for API exploration. Each service uses the
+Springdoc WebMVC UI starter, pinned to 2.9.1, with generated business API schemas.
+This is the approved exception to the original dependency baseline, not a reason
+to add unrelated tooling or a security stack.
