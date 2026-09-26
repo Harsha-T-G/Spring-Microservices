@@ -3,14 +3,14 @@ services:
     image: postgres:17-alpine
     environment:
       POSTGRES_DB: inventory
-      POSTGRES_USER: inventory
+      POSTGRES_USER: ${INVENTORY_DB_USER:-inventory}
       POSTGRES_PASSWORD: ${INVENTORY_DB_PASSWORD:-inventory_dev}
     ports:
       - "127.0.0.1:${INVENTORY_DB_PORT:-5433}:5432"
     volumes:
       - inventory-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U inventory -d inventory"]
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
       interval: 2s
       timeout: 3s
       retries: 20
@@ -18,14 +18,14 @@ services:
     image: postgres:17-alpine
     environment:
       POSTGRES_DB: order
-      POSTGRES_USER: order
+      POSTGRES_USER: ${ORDER_DB_USER:-order}
       POSTGRES_PASSWORD: ${ORDER_DB_PASSWORD:-order_dev}
     ports:
       - "127.0.0.1:${ORDER_DB_PORT:-5434}:5432"
     volumes:
       - order-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U order -d order"]
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
       interval: 2s
       timeout: 3s
       retries: 20
@@ -37,7 +37,7 @@ services:
     environment:
       SPRING_PROFILES_ACTIVE: dev
       INVENTORY_DB_URL: jdbc:postgresql://inventory-db:5432/inventory
-      INVENTORY_DB_USER: inventory
+      INVENTORY_DB_USER: ${INVENTORY_DB_USER:-inventory}
       INVENTORY_DB_PASSWORD: ${INVENTORY_DB_PASSWORD:-inventory_dev}
     ports:
       - "127.0.0.1:${INVENTORY_PORT:-8081}:8081"
@@ -51,7 +51,7 @@ services:
     environment:
       INVENTORY_BASE_URL: http://inventory-service:8081
       ORDER_DB_URL: jdbc:postgresql://order-db:5432/order
-      ORDER_DB_USER: order
+      ORDER_DB_USER: ${ORDER_DB_USER:-order}
       ORDER_DB_PASSWORD: ${ORDER_DB_PASSWORD:-order_dev}
     ports:
       - "127.0.0.1:${ORDER_PORT:-8080}:8080"

@@ -100,3 +100,4 @@ ADR 0003 records the design and supersedes earlier in-memory wording.
 | DB-003 | Order attempts, stable IDs, final outcomes and replay survive service restart; technical failure retains the attempt for safe retry. |
 | DB-004 | `dev` stock seed runs once per database; default profile remains unseeded; Compose uses durable volumes and starts without prebuilt JARs. |
 | DB-005 | Tests run against isolated PostgreSQL and a real-process check demonstrates restart persistence. |
+| DB-006 | A tracked `.env.example` documents local database usernames/passwords; a Git-ignored `.env` supplies Compose credentials to each database and its matching service. |

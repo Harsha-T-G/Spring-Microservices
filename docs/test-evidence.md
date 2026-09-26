@@ -256,3 +256,20 @@ PostgreSQL containers and both applications. GET JAVA-BOOK returned 20 and a
 Compose Order POST returned a CONFIRMED order with a reservation ID. The isolated
 Compose stack and its temporary named volumes were removed after the smoke test;
 normal user `docker compose down` retains its named volumes.
+
+## Local Compose credentials — 2026-09-26
+
+DB-006: the tracked `.env.example` lists the two local PostgreSQL username/password
+pairs; the working `.env` is Git-ignored. Compose interpolates each pair into
+its PostgreSQL container and matching Spring service. Its health checks read
+the configured database username rather than a fixed username. Standalone
+Java processes require exported variables if credentials differ from their
+local defaults.
+
+`docker compose --env-file .env config --quiet` passed. A configuration check
+with custom values confirmed both database/service pairs and health checks use
+the supplied values. An isolated Compose startup with custom Inventory and
+Order usernames/passwords returned Inventory's seeded stock and Order's UP
+health status; the test containers and their temporary volumes were removed.
+No application Java behavior changed, so the existing service suites were not
+repeated for this configuration-only follow-up.

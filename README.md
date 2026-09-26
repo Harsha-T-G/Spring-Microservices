@@ -37,10 +37,15 @@ Focused examples:
 
 ## Run the services
 
-From the repository root, Docker Compose builds and starts the two services and
-their two PostgreSQL databases. Prebuilt JARs are not needed:
+From the repository root, create your local credentials file from the tracked
+example. Edit the usernames and passwords in `.env` if you want different
+local values. Docker Compose reads `.env` automatically and passes each pair
+to its PostgreSQL container and matching Spring service. `.env` is Git-ignored;
+the example credentials are for local development only. Prebuilt JARs are not
+needed:
 
 ```sh
+cp -n .env.example .env
 docker compose up --build -d
 docker compose ps
 docker compose logs -f
@@ -51,6 +56,8 @@ Wait for `http://localhost:8081/actuator/health` and
 Stop without deleting data using `docker compose down`. The named volumes keep
 stock, reservations and orders across application and container restarts.
 `docker compose down -v` removes the demo databases and their history.
+If you change credentials after a database volume has been initialized, update
+the existing database role as well; editing `.env` alone does not change it.
 
 For separate local Java processes, build both JARs and start only the databases:
 
@@ -71,7 +78,10 @@ java -jar order-service/target/order-service-0.0.1-SNAPSHOT.jar
 ```
 
 Inventory listens on 8081 and Order on 8080. The local JDBC defaults target
-PostgreSQL on 127.0.0.1 ports 5433 and 5434 with Compose's demo credentials.
+PostgreSQL on 127.0.0.1 ports 5433 and 5434 with the example credentials.
+Docker Compose reads `.env` automatically; standalone `java -jar` processes do
+not, so export the `*_DB_USER` and `*_DB_PASSWORD` values if you change them
+from the application defaults.
 For anything beyond local development, supply `INVENTORY_DB_URL`,
 `INVENTORY_DB_USER`, `INVENTORY_DB_PASSWORD` and their `ORDER_DB_*` equivalents.
 Only the explicit Inventory `dev` profile seeds JAVA-BOOK=20,

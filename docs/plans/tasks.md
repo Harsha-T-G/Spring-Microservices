@@ -49,3 +49,4 @@ See the latest verification entry in test-evidence.md for executed checks.
 | 12 Inventory persistence | DB-001/002/004 | PostgreSQL migration and dev seed; API stock/replay/concurrency tests run against PostgreSQL | PASS; see PostgreSQL evidence |
 | 13 Order persistence | DB-001/003 | Durable attempt before RestClient call and completed outcome; API replay/retry tests against PostgreSQL | PASS; see PostgreSQL evidence |
 | 14 Deployment and restart | DB-004/005 | Compose two databases, multi-stage images, real-process restart and repeat-key checks | PASS; see PostgreSQL evidence |
+| 15 Local database credentials | DB-006 | Add ignored `.env`, tracked example, and consistent Compose username/password interpolation | PASS; see local credentials evidence |
