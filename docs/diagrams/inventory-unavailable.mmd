@@ -17,7 +17,7 @@ sequenceDiagram
     Note over B: Repeated failed operations reach threshold: OPEN
     C->>O: Later order request
     O->>B: Request permission
-    B-->>O: Denied; no HTTP attempt
+    B-->>O: Denied, no HTTP attempt
     O-->>C: 503 immediately
     Note over B: After wait, next request can enter HALF_OPEN
     C->>O: Retry after recovery

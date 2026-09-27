@@ -1,13 +1,13 @@
 # Service boundaries
 
-Status: planning specification. Requirements below come from the exercise;
-implementation choices are identified in the API specification.
+Status: implemented boundaries. Requirements below come from the exercise;
+selected implementation choices are identified in the API specification.
 
 ## Ownership
 
 | Service | Owns | Does | Must not do |
 | --- | --- | --- | --- |
-| Order, port 8080 | Orders, statuses, order idempotency records | Validate orders, request reservations, store confirmed/rejected outcomes, provide order reads. | Read Inventory's collection/database, calculate available stock, import Inventory classes. |
+| Order, port 8080 | Orders, statuses, order idempotency records | Validate orders, request reservations, store confirmed/rejected outcomes, provide order reads. | Read Inventory's tables, calculate available stock, import Inventory classes. |
 | Inventory, port 8081 | ProductStock, Reservations, reservation idempotency records | Find stock, enforce availability, reserve atomically, return original reservations for duplicates. | Create orders, decide customer order status, import Order classes. |
 
 Models required by the exercise:
@@ -50,7 +50,8 @@ single database transaction.
 
 The split introduces unavailable dependencies, latency, response loss, partial
 completion, retries, and contract compatibility. Sharing internal models or
-storage would bind deployments and allow one service to bypass another's rules.
+directly accessing another service's tables would bind deployments and allow
+one service to bypass another's rules.
 
 ## Non-goals and limits
 
@@ -58,10 +59,12 @@ No authentication/authorization, gateway, discovery server, messaging, distribut
 transaction, frontend, Kubernetes, or cloud deployment. Inventory does not call
 Order back. Do not add these features to complete a fundamentals exercise.
 
-In-memory data disappears at restart, is not shared across replicas, and grows
-without a retention policy. Single-process locks do not coordinate multiple
-instances. Production requires durable storage, transactional reservation and
-idempotency records, uniqueness constraints, and an approach to reconciliation.
+Both services now use one durable PostgreSQL database, with separate
+`inventory` and `orders` schemas and Flyway histories. Transactional stock
+changes and reservation uniqueness prevent overselling. Order request locks
+remain process-local; multiple Order replicas would need distributed
+coordination. Production also needs retention policies, backups and an
+approach to reconciliation.
 
 A timeout is an unknown outcome: stock may already have been reserved. Repeating
 the same key and order ID can recover the reservation while the original data
@@ -80,8 +83,8 @@ are derived copies; update them from the .mmd sources when flows change.
 flowchart LR
     C[Client] -->|HTTP| O[Order Service :8080]
     O -->|Synchronous RestClient POST| I[Inventory Service :8081]
-    O --- OD[(Orders and order idempotency)]
-    I --- ID[(Stock and reservations)]
+    O -->|JDBC orders schema| DB[(PostgreSQL microservices DB)]
+    I -->|JDBC inventory schema| DB
 ```
 
 ## Successful order sequence
@@ -92,14 +95,14 @@ sequenceDiagram
     participant O as Order Service
     participant I as Inventory Service
     C->>O: POST /orders + key + correlation ID
-    O->>O: Validate and retain stable order ID for key
+    O->>O: Persist attempt and stable order ID for key
     O->>I: POST /inventory/{sku}/reservations + same headers
-    I->>I: Atomically check key, reserve stock, store result
+    I->>I: Commit stock and reservation atomically
     I-->>O: 201 RESERVED + reservation ID
-    O->>O: Store CONFIRMED order
+    O->>O: Persist CONFIRMED order
     O-->>C: 201 order + Location + correlation ID
     C->>O: Repeat same order and key
-    O-->>C: Original completed order; no Inventory call
+    O-->>C: Original completed order, no Inventory call
 ```
 
 ## Inventory-unavailable sequence
@@ -124,7 +127,7 @@ sequenceDiagram
     Note over B: Repeated failed operations reach threshold: OPEN
     C->>O: Later order request
     O->>B: Request permission
-    B-->>O: Denied; no HTTP attempt
+    B-->>O: Denied, no HTTP attempt
     O-->>C: 503 immediately
     Note over B: After wait, next request can enter HALF_OPEN
     C->>O: Retry after recovery

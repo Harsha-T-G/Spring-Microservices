@@ -12,7 +12,7 @@ Use language features when they improve clarity, not merely because they exist.
 - Lowercase packages, PascalCase types, lowerCamelCase methods/fields,
   UPPER_SNAKE_CASE constants. Use action-oriented methods and plural collections.
 - Use role suffixes where useful: Controller, Service, Client, Request, Response,
-  Exception. Do not call in-memory objects JPA entities.
+  Exception. Use plain domain models; do not call JDBC-mapped objects JPA entities.
 - UUID identifiers, Instant timestamps, Locale.ROOT SKU normalization. Inject
   Clock when time affects behavior and requires deterministic testing.
 - Domain exceptions/outcomes express meaning; HTTP translation stays in adapters.

@@ -1,7 +1,9 @@
 # Specification and acceptance index
 
-Status: exercise requirements captured; explicitly proposed API choices remain
-drafts. No application behavior is implemented by this documentation foundation.
+Status: implementation and automated verification completed on the feature
+branch. Selected API defaults are recorded in the API baseline and ADR 0002.
+See test-evidence.md for results; an isolated Compose runtime check passed.
+A live presentation remains outside the completed checks. PR #1 is published.
 
 [Capability map](../CAPABILITY-MAP.md), [API contract](api-specification.md),
 [boundaries](service-boundaries.md), [structure](project-structure.md),
@@ -32,12 +34,12 @@ drafts. No application behavior is implemented by this documentation foundation.
 | ID | Acceptance criterion |
 | --- | --- |
 | ORD-001 | Valid order becomes CONFIRMED, returns 201 plus Location and order/reservation IDs. |
-| ORD-002 | Inventory receives order ID, quantity, key and correlation ID through RestClientInventoryClient behind InventoryClient. |
-| ORD-003 | Unknown SKU/insufficient stock yield clear rejection; proposed stored REJECTED/422 behavior stays explicit in API spec. |
+| ORD-002 | Inventory receives order ID, quantity, key and correlation ID through `RestClientInventoryClient` behind the Order-owned `InventoryClient` interface. `OrderService` depends only on that interface; HTTP request/response DTOs stay in the adapter. |
+| ORD-003 | Unknown SKU/insufficient stock yield clear rejection; selected stored REJECTED/422 behavior stays explicit in API spec. |
 | ORD-004 | Unreachable Inventory yields controlled 503, never fabricated success. |
 | ORD-005 | Completed matching-key replay returns original outcome without Inventory call; changed input returns 409. |
 | ORD-006 | GET returns stored order or 404; list is ascending createdAt, empty array when empty. |
-| ORD-007 | Proposed uncertainty handling retains order ID/key across 503 retries and bounds same-key concurrency waits; technical uncertainty is not business rejection. |
+| ORD-007 | Selected uncertainty handling retains order ID/key across 503 retries and bounds same-key concurrency waits; technical uncertainty is not business rejection. |
 | ORD-008 | Validation and dependency errors use consistent safe envelopes; HTTP details stay outside OrderService. |
 
 ## Resilience
@@ -70,7 +72,44 @@ drafts. No application behavior is implemented by this documentation foundation.
 | DEL-004 | README includes prerequisites/build/test/start/config/endpoints/curl/failure tables/limits; editable diagrams and learning notes cover the exercise. |
 | DEL-005 | PR links specs/diagrams and actual results/limits, excludes disposable reports; ten-minute demo covers required behaviors. |
 
-Detailed HTTP shapes and proposed normalization/rejection/replay/locking choices
-remain in the API contract rather than being duplicated here. Commands and
-planned selectors in the task list must be checked against actual files before
-execution. NOT RUN remains the application status until tests actually execute.
+Detailed HTTP shapes and selected normalization/rejection/replay/locking choices
+remain in the API contract rather than being duplicated here. Implemented
+criteria and actual verification map to tests in [evidence](test-evidence.md).
+DEL-005 remains partial until a live demo is delivered; PR #1 is published.
+
+## API exploration update
+
+User-requested extension: Swagger UI in both services and the three diagrams specified
+in the exercise: service diagram, successful-order sequence, and Inventory-unavailable sequence.
+
+| ID | Acceptance criterion |
+| --- | --- |
+| API-001 | Both services serve Swagger UI and OpenAPI JSON with service title/version and only their business API paths. |
+| API-002 | POST operations expose required Idempotency-Key, optional X-Correlation-Id, valid example bodies, success and safe error schemas/statuses. |
+| DOC-001 | Exactly the three required editable Mermaid diagrams remain; all render and documentation links/previews agree. |
+
+## Persistence revision
+
+The assignment permits in-memory storage; the user chose PostgreSQL and Flyway.
+ADR 0003 records the design and supersedes earlier in-memory wording.
+
+| ID | Acceptance criterion |
+| --- | --- |
+| DB-001 (superseded by DB-007) | The first persistence revision used separate PostgreSQL databases. |
+| DB-002 | Inventory stock, reservations and replay results survive service restart; concurrent reservations never oversell or reuse a key for changed input. |
+| DB-003 | Order attempts, stable IDs, final outcomes and replay survive service restart; technical failure retains the attempt for safe retry. |
+| DB-004 | `dev` stock seed runs once per database; default profile remains unseeded; Compose uses durable volumes and starts without prebuilt JARs. |
+| DB-005 | Tests run against isolated PostgreSQL and a real-process check demonstrates restart persistence. |
+| DB-006 | A tracked `.env.example` documents one local database username/password; a Git-ignored `.env` supplies the same credentials to PostgreSQL and both services. |
+
+## Shared database revision
+
+The user selected one PostgreSQL database for Order and Inventory. Each service
+keeps its own tables and Flyway history in a separate schema. This replaces the
+physical database separation in DB-001 and ADR 0003 without changing the HTTP
+contract or allowing cross-service table access.
+
+| ID | Acceptance criterion |
+| --- | --- |
+| DB-007 | Compose runs one PostgreSQL container and one database; both services connect to it with one credential pair, using separate `inventory` and `orders` schemas and independent Flyway histories. |
+| DB-008 | A real two-service run proves both migrations coexist in one database, Order can reserve Inventory stock over HTTP, and restart/replay behavior remains intact. |

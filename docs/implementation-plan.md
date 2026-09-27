@@ -5,7 +5,8 @@
 Source: `harsha_microservices_fundamentals_exercises.txt`, supplied by the user.
 Initial planning began in an empty workspace. The user subsequently supplied
 SpringMicroservices, containing a generated single-service starter. This foundation
-captures specifications and development rules; application migration is the next slice.
+captured specifications and development rules before coding. Application migration
+and behavior slices are now implemented; see tasks and evidence for actual status.
 
 The exercise is about correct behavior across a network boundary. RestClient is
 the communication mechanism; ownership, duplicate handling, partial failures,
@@ -63,22 +64,24 @@ the work; it is not the first time tests are written.
 ## Planned code responsibilities
 
 Each service has its own `controller`, `service`, `model`, `dto`, `exception`,
-`config`, and in-memory storage responsibilities. Order additionally has a
-`client` package. Use constructor injection throughout.
+`config`, and PostgreSQL-backed storage responsibilities. Order additionally has a
+`gateway` package for its Inventory-facing interface and outcome, with the
+RestClient adapter under `gateway.http`. Use constructor injection throughout.
 
 | Component | Responsibility |
 | --- | --- |
 | Controllers | Bind and validate HTTP input, delegate, choose response status/headers. |
 | InventoryService | Apply stock rules and reservation idempotency atomically. |
 | OrderService | Coordinate order identity, idempotency, reservation outcome, and storage. |
-| InventoryClient | Order-owned interface for reserving stock using Order-owned types. |
-| RestClientInventoryClient | Build the HTTP request; map remote status/body/transport failures into meaningful client outcomes. |
+| InventoryClient | Order-owned gateway interface for reserving stock; returns the reservation ID without exposing the remote DTO. |
+| RestClientInventoryClient | HTTP adapter that builds the request, validates the remote response, and maps transport/status failures into meaningful gateway outcomes. |
 | Configuration | Build the HTTP client and resilience policies from configuration. |
 | Exception advice | Produce the agreed error envelope without leaking internals. |
 | Request filter | Manage correlation ID, MDC lifetime, and request completion logging. |
 
-Avoid generic repository frameworks or abstractions beyond what these small
-in-memory services need. A simple local store is sufficient.
+Use Spring JDBC for small local stores and Flyway for versioned schema.
+Use a separate schema per service in one PostgreSQL database; neither service
+reads the other service's tables.
 
 ## Acceptance and test matrix
 
@@ -129,7 +132,7 @@ reports; preserve these durable specs and required test evidence.
 | 5–7 min | Simulate slow/unavailable Inventory, show retry and circuit opening. |
 | 7–8 min | Restore Inventory and demonstrate recovery. |
 | 8–9 min | Follow one correlation ID across both logs. |
-| 9–10 min | Show both passing suites and explain in-memory limitations. |
+| 9–10 min | Show both passing suites and explain the remaining cross-service transaction limitation. |
 
-Next implementation slice: Inventory stock lookup and unknown-SKU behavior,
+The original next slice was Inventory stock lookup and unknown-SKU behavior,
 preceded by one failing public API test.
