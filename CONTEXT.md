@@ -20,14 +20,14 @@ Initial inspection found a single generated Boot 4.1.1/Java 17 starter with
 Lombok and devtools, and no Git metadata. This is input to preserve, not evidence
 of compliance with the exercise's Java 21/Boot 3.x/two-service requirement.
 
-Implementation now exists on feat/independent-services: two Java 21 / Boot
+Implementation now exists on main after PR #1 merged: two Java 21 / Boot
 3.5.16 applications, atomic Inventory reservations, Order RestClient integration,
 replay identity, bounded retry/circuit breaker and correlation handling. Initial
-main remains the foundation. API defaults were selected as implementation
+main originally held the foundation. API defaults were selected as implementation
 choices under the request to start coding; they are not extra assignment mandates.
 
 See docs/test-evidence.md for verified behavior and remaining delivery limits.
-The root generated starter is preserved in feature-branch history; build from
-each service directory. Origin is Harsha-T-G/Spring-Microservices; implementation is in PR #1.
+The root generated starter is preserved in Git history; build from each service
+directory. Origin is Harsha-T-G/Spring-Microservices; PR #1 is merged.
 Swagger UI supports manual API exploration in both services. The diagrams are
 exactly the three required by the exercise.

@@ -299,6 +299,22 @@ class OrderApiTest {
     }
 
     @ParameterizedTest
+    @ValueSource(strings = {"customerId", "sku"})
+    void givenOversizedOrderField_whenCreatingOrder_thenBadRequestWithoutPersistenceOrRemoteCall(String field)
+            throws Exception {
+        String body = json.writeValueAsString(java.util.Map.of(
+                "customerId", "customerId".equals(field) ? "A".repeat(129) : "CUST-1",
+                "sku", "sku".equals(field) ? "A".repeat(129) : "JAVA-BOOK",
+                "quantity", 2));
+        mvc.perform(post("/api/v1/orders").header("Idempotency-Key", "oversized-" + field)
+                        .contentType("application/json").content(body))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+        mvc.perform(get("/api/v1/orders")).andExpect(content().json("[]"));
+        INVENTORY.verify(0, WireMock.postRequestedFor(WireMock.anyUrl()));
+    }
+
+    @ParameterizedTest
     @NullSource
     @ValueSource(strings = {"", "bad key", "bad/key"})
     void givenInvalidKey_whenCreatingOrder_thenBadRequestWithoutRemoteCall(String key) throws Exception {
@@ -324,6 +340,20 @@ class OrderApiTest {
                 .withHeader("Idempotency-Key", WireMock.equalTo("slow"))
                 .withHeader("X-Correlation-Id", WireMock.equalTo("slow-correlation")));
         mvc.perform(get("/api/v1/orders")).andExpect(content().json("[]"));
+    }
+
+    @Test
+    void givenSlowInventoryResponseBody_whenCreatingOrder_thenTimeoutRetriesAndReturnsUnavailable() throws Exception {
+        INVENTORY.stubFor(WireMock.post(WireMock.anyUrl()).willReturn(WireMock.aResponse()
+                .withStatus(201).withHeader("Content-Type", "application/json")
+                .withBody("{\"reservationId\":\"" + RESERVATION_ID + "\"}")
+                .withChunkedDribbleDelay(3, 2500)));
+        mvc.perform(post("/api/v1/orders").header("Idempotency-Key", "slow-body")
+                        .contentType("application/json").content(REQUEST))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.code").value("INVENTORY_UNAVAILABLE"));
+        INVENTORY.verify(2, WireMock.postRequestedFor(WireMock.anyUrl())
+                .withHeader("Idempotency-Key", WireMock.equalTo("slow-body")));
     }
 
     @Test

@@ -168,7 +168,15 @@ def main():
         assert status == 200 and len(orders) == 2
         inventory = launch('inventory', inventory_port, ['--spring.profiles.active=dev'])
         stock(18)
-        record('inventory-restart', stock=18, original_reservation_preserved=True)
+        status, reservation, _, _ = request(inventory_port, '/api/v1/inventory/JAVA-BOOK/reservations',
+                                             {'orderId': original['id'], 'quantity': 2}, 'e2e-success',
+                                             'e2e-inventory-replay')
+        assert status == 201 and reservation['reservationId'] == original['reservationId'], reservation
+        assert reservation['orderId'] == original['id'] and reservation['sku'] == 'JAVA-BOOK', reservation
+        assert reservation['quantity'] == 2 and reservation['status'] == 'RESERVED', reservation
+        stock(18)
+        record('inventory-restart', stock=18, reservation_replayed=True,
+               reservation_id=reservation['reservationId'])
         def recovered():
             status, body, _, _ = request(order_port, '/api/v1/orders', payload, 'e2e-outage-0', 'e2e-recovery')
             assert status == 201, body

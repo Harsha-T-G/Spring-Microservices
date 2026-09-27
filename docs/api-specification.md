@@ -13,8 +13,8 @@ IDs in response headers and errors.
 
 Proposed input rules:
 
-- `customerId`: nonblank, trimmed, case-sensitive.
-- `sku`: nonblank, trimmed, normalized to uppercase using `Locale.ROOT` in both services. Inventory matching is case-insensitive as required.
+- `customerId`: nonblank, trimmed, case-sensitive, at most 128 characters after trimming.
+- `sku`: nonblank, trimmed, normalized to uppercase using `Locale.ROOT` in both services. Order rejects values over 128 characters before persistence. Inventory matching is case-insensitive as required.
 - `quantity`: required integer greater than zero; reject null, fractions, and out-of-range values as 400 rather than silently coercing them.
 - Reservation `orderId`: required valid UUID.
 - `Idempotency-Key`: required on POST, case-sensitive, 1–128 characters from letters, digits, `.`, `_`, `:`, and `-`. Invalid/missing key returns 400.
@@ -226,7 +226,8 @@ not a claim that all are built-in Spring properties):
 | HALF_OPEN permitted operations | 1 | One successful trial closes; failed trial reopens. |
 
 `maxAttempts` includes the first attempt; configure a predicate for connection
-failures, timeouts, and HTTP 5xx only. Log retry number and correlation ID without
+failures, timeouts (including while reading response bodies), and HTTP 5xx only.
+Malformed response JSON is a non-retryable contract error. Log retry number and correlation ID without
 the request body. [Resilience4j Retry](https://resilience4j.readme.io/docs/retry).
 
 Proposed explicit nesting: **CircuitBreaker(Retry(single HTTP attempt))**.

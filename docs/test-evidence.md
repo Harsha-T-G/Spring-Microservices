@@ -326,3 +326,22 @@ open circuit without retry traffic, recovery and restart persistence.
 The service diagram remains accurate: Order calls Inventory over HTTP. No extra
 diagram or dependency was needed. Raw test and process logs remain in ignored
 `.local/gateway-work/project/.local/` and are not committed.
+
+## Post-merge review fixes — 2026-09-27
+
+These checks ran on local `main` based on merged commit `42e1e6f`, with the fixes
+uncommitted during RED/GREEN verification. Native Java was 21.0.12.1; the
+services used their own Maven wrappers and Testcontainers PostgreSQL.
+
+| Finding / criterion | Reproduction before fix | Verification after fix |
+| --- | --- | --- |
+| Slow response body, RES-002/005 | `OrderApiTest#givenSlowInventoryResponseBody_whenCreatingOrder_thenTimeoutRetriesAndReturnsUnavailable`: body chunks began before the response timeout, then stalled; expected 503, observed 502 | Focused test PASS: 503 `INVENTORY_UNAVAILABLE`, two HTTP requests with the same key. Existing malformed-success tests still pass without retry. |
+| Oversized order fields, ORD-008 | `OrderApiTest#givenOversizedOrderField_whenCreatingOrder_thenBadRequestWithoutPersistenceOrRemoteCall`: both `customerId` and `sku` at 129 characters returned 500 | Focused test PASS for both fields: 400 `VALIDATION_ERROR`, no completed order or Inventory call. |
+| Hash-colliding keys, ORD-007 | `OrderConcurrencyTest#givenCollidingHashKeys_whenOneOrderIsInProgress_thenOtherOrderCanReserveIndependently`: `Aa` in progress caused distinct key `BB` to return 503 | `OrderConcurrencyTest` PASS: both keys confirm independently, while the existing same-key bounded-wait check still passes. |
+| Inventory restart replay, DB-002/005/008 | The previous E2E script checked only persisted stock after Inventory restart; it did not resend the original reservation to Inventory | Updated `scripts/verify-e2e.py` PASS: direct replay returns 201 with the original reservation/order IDs and stock remains 18. |
+
+After the focused checks, `./mvnw -q clean verify` passed in **both** services.
+The real two-process E2E run passed all existing scenarios plus direct Inventory
+replay after restart and later Order replay after its own restart. It used a
+disposable PostgreSQL container and left raw process logs/results only in
+ignored `.local/e2e/20260927-130523/`; no temporary artifacts are committed.

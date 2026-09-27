@@ -7,6 +7,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
 import lombok.RequiredArgsConstructor;
@@ -25,8 +26,7 @@ public class OrderStore {
     private static final RowMapper<Order> ORDER_MAPPER = OrderStore::order;
 
     private final JdbcTemplate jdbc;
-    private final ReentrantLock[] locks = java.util.stream.IntStream.range(0, 1024)
-            .mapToObj(ignored -> new ReentrantLock()).toArray(ReentrantLock[]::new);
+    private final ConcurrentHashMap<String, LockEntry> locks = new ConcurrentHashMap<>();
 
     public OrderAttempt begin(String key, CreateOrderRequest request) {
         jdbc.update("INSERT INTO orders (id, idempotency_key, customer_id, sku, quantity, created_at) "
@@ -39,8 +39,14 @@ public class OrderStore {
             if (!previous.equals(request)) {
                 throw new OrderException("IDEMPOTENCY_CONFLICT", "The key belongs to a different order request");
             }
+            LockEntry entry = locks.compute(key, (ignored, existing) -> {
+                LockEntry current = existing == null ? new LockEntry() : existing;
+                current.references++;
+                return current;
+            });
             return new OrderAttempt(result.getObject("id", UUID.class), result.getTimestamp("created_at").toInstant(),
-                    previous, locks[Math.floorMod(key.hashCode(), locks.length)]);
+                    previous, entry.lock, () -> locks.computeIfPresent(key, (ignored, current) ->
+                            --current.references == 0 ? null : current));
         }, key);
     }
 
@@ -65,5 +71,10 @@ public class OrderStore {
                 result.getString("sku"), result.getInt("quantity"), OrderStatus.valueOf(result.getString("status")),
                 result.getObject("reservation_id", UUID.class), result.getString("rejection_reason"),
                 result.getTimestamp("created_at").toInstant());
+    }
+
+    private static final class LockEntry {
+        private final ReentrantLock lock = new ReentrantLock();
+        private int references;
     }
 }

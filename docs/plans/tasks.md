@@ -1,7 +1,8 @@
 # Implementation slices
 
-Application slices are implemented on feat/independent-services. Results are
-recorded in [test evidence](../test-evidence.md); the published PR and remaining live demonstration are tracked separately.
+Application slices were implemented on feat/independent-services and merged in
+PR #1. Results are recorded in [test evidence](../test-evidence.md); the remaining
+live demonstration is tracked separately.
 
 | Task | Criteria | Slice and main files/responsibilities | Verification / status |
 | --- | --- | --- | --- |
@@ -63,3 +64,12 @@ See the latest verification entry in test-evidence.md for executed checks.
 | Slice | Criteria | Observable test and implementation | Status |
 | --- | --- | --- | --- |
 | 18 Separate port and adapter | ORD-002 | Keep `OrderService` on an Order-owned gateway interface, put RestClient and remote DTOs in its HTTP adapter, retain request headers, response validation and resilience behavior | PASS; see HTTP gateway evidence |
+
+## Post-merge review fixes
+
+| Slice | Criteria | Observable test and implementation | Status |
+| --- | --- | --- | --- |
+| 19 Response-body timeout | RES-002/005 | Stall Inventory's HTTP response body after headers; classify transport I/O during decoding as retryable unavailable while malformed JSON stays a contract error | PASS; focused RED/GREEN and Order clean verify |
+| 20 Order field lengths | ORD-008 | Reject `customerId` and `sku` over the 128-character database limit before inserting or calling Inventory | PASS; both fields reproduced 500, then 400; Order clean verify |
+| 21 Exact-key coordination | ORD-007 | Reproduce `Aa`/`BB` hash collision while one order is in flight; use reference-counted per-key locks and preserve same-key waiting | PASS; focused RED/GREEN and Order concurrency suite |
+| 22 Inventory restart replay | DB-002/005/008 | After Inventory restart, POST the original reservation key, order ID and quantity directly to Inventory; assert original reservation ID and unchanged stock | PASS; real-process E2E rerun |

@@ -56,7 +56,15 @@ public class RestClientInventoryClient implements InventoryClient {
         } catch (ResourceAccessException exception) {
             throw new InventoryFailure(InventoryFailure.Kind.UNAVAILABLE, "INVENTORY_UNAVAILABLE");
         } catch (RestClientException exception) {
-            throw new InventoryFailure(InventoryFailure.Kind.CONTRACT, "INVENTORY_CONTRACT_ERROR");
+            boolean transportFailure = false;
+            for (Throwable cause = exception; cause != null; cause = cause.getCause()) {
+                if (cause instanceof IOException && !(cause instanceof JsonProcessingException)) {
+                    transportFailure = true;
+                }
+            }
+            throw transportFailure
+                    ? new InventoryFailure(InventoryFailure.Kind.UNAVAILABLE, "INVENTORY_UNAVAILABLE")
+                    : new InventoryFailure(InventoryFailure.Kind.CONTRACT, "INVENTORY_CONTRACT_ERROR");
         }
     }
 

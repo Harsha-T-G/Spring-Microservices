@@ -61,7 +61,40 @@ class OrderConcurrencyTest {
 
     @BeforeEach
     void resetOrders() {
+        INVENTORY.resetAll();
         jdbc.update("DELETE FROM orders");
+    }
+
+    @Test
+    void givenCollidingHashKeys_whenOneOrderIsInProgress_thenOtherOrderCanReserveIndependently() throws Exception {
+        INVENTORY.stubFor(WireMock.post(WireMock.anyUrl()).withHeader("Idempotency-Key", WireMock.equalTo("Aa"))
+                .willReturn(WireMock.aResponse().withStatus(201).withFixedDelay(700)
+                        .withHeader("Content-Type", "application/json")
+                        .withBody("{\"reservationId\":\"223e4567-e89b-42d3-a456-426614174000\","
+                                + "\"orderId\":\"{{jsonPath request.body '$.orderId'}}\","
+                                + "\"sku\":\"JAVA-BOOK\",\"quantity\":2,\"status\":\"RESERVED\"}")
+                        .withTransformers("response-template")));
+        INVENTORY.stubFor(WireMock.post(WireMock.anyUrl()).withHeader("Idempotency-Key", WireMock.equalTo("BB"))
+                .willReturn(WireMock.aResponse().withStatus(201).withHeader("Content-Type", "application/json")
+                        .withBody("{\"reservationId\":\"323e4567-e89b-42d3-a456-426614174000\","
+                                + "\"orderId\":\"{{jsonPath request.body '$.orderId'}}\","
+                                + "\"sku\":\"JAVA-BOOK\",\"quantity\":2,\"status\":\"RESERVED\"}")
+                        .withTransformers("response-template")));
+        try (var executor = Executors.newSingleThreadExecutor()) {
+            var first = executor.submit(() -> mvc.perform(post("/api/v1/orders").header("Idempotency-Key", "Aa")
+                    .contentType("application/json").content(REQUEST)).andReturn().getResponse());
+            await().atMost(Duration.ofSeconds(2)).pollInterval(Duration.ofMillis(10))
+                    .untilAsserted(() -> INVENTORY.verify(1, WireMock.postRequestedFor(WireMock.anyUrl())
+                            .withHeader("Idempotency-Key", WireMock.equalTo("Aa"))));
+            mvc.perform(post("/api/v1/orders").header("Idempotency-Key", "BB")
+                            .contentType("application/json").content(REQUEST))
+                    .andExpect(status().isCreated());
+            assertThat(first.get(3, TimeUnit.SECONDS).getStatus()).isEqualTo(201);
+            INVENTORY.verify(1, WireMock.postRequestedFor(WireMock.anyUrl())
+                    .withHeader("Idempotency-Key", WireMock.equalTo("BB")));
+            assertThat(jdbc.queryForObject("SELECT COUNT(*) FROM orders WHERE status = 'CONFIRMED'", Integer.class))
+                    .isEqualTo(2);
+        }
     }
 
     @Test

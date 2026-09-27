@@ -1,9 +1,9 @@
 # Specification and acceptance index
 
-Status: implementation and automated verification completed on the feature
-branch. Selected API defaults are recorded in the API baseline and ADR 0002.
+Status: implementation is on main after PR #1 merged; post-merge review fixes
+are recorded in test-evidence.md. Selected API defaults are recorded in the API baseline and ADR 0002.
 See test-evidence.md for results; an isolated Compose runtime check passed.
-A live presentation remains outside the completed checks. PR #1 is published.
+A live presentation remains outside the completed checks. PR #1 is merged.
 
 [Capability map](../CAPABILITY-MAP.md), [API contract](api-specification.md),
 [boundaries](service-boundaries.md), [structure](project-structure.md),
@@ -75,7 +75,7 @@ A live presentation remains outside the completed checks. PR #1 is published.
 Detailed HTTP shapes and selected normalization/rejection/replay/locking choices
 remain in the API contract rather than being duplicated here. Implemented
 criteria and actual verification map to tests in [evidence](test-evidence.md).
-DEL-005 remains partial until a live demo is delivered; PR #1 is published.
+DEL-005 remains partial until a live demo is delivered; PR #1 is merged.
 
 ## API exploration update
 

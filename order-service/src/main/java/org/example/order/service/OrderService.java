@@ -43,8 +43,12 @@ public class OrderService {
             Thread.currentThread().interrupt();
             throw new OrderException("ORDER_IN_PROGRESS", "The request was interrupted. Retry with the same key.");
         } finally {
-            if (acquired) {
-                attempt.release();
+            try {
+                if (acquired) {
+                    attempt.release();
+                }
+            } finally {
+                attempt.complete();
             }
         }
     }

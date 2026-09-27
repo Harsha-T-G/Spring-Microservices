@@ -18,6 +18,7 @@ public class OrderAttempt {
     private final Instant createdAt;
     private final CreateOrderRequest request;
     private final ReentrantLock lock;
+    private final Runnable onComplete;
 
     public boolean matches(CreateOrderRequest candidate) {
         return request.equals(candidate);
@@ -29,5 +30,9 @@ public class OrderAttempt {
 
     public void release() {
         lock.unlock();
+    }
+
+    public void complete() {
+        onComplete.run();
     }
 }
